@@ -21,7 +21,7 @@ class SpatioTemporalCNN(nn.Module):
         # Assuming the input shape is [bsz, T, C]
         self.spatial_conv1 = nn.Conv1d(in_channels=self.n_channel, out_channels=self.n_channel, kernel_size=3, padding=1)
         self.ln1 = nn.LayerNorm([self.n_channel, self.n_time])
-        self.time_conv1 = nn.Conv1d(in_channels=self.T, out_channels=40, kernel_size=3, padding=1)
+        self.time_conv1 = nn.Conv1d(in_channels=self.n_time, out_channels=40, kernel_size=3, padding=1)
         self.ln2 = nn.LayerNorm([40, 48])
         self.spatial_conv2 = nn.Conv1d(in_channels=48, out_channels=24, kernel_size=3, padding=1)
         self.ln3 = nn.LayerNorm([24, 40])

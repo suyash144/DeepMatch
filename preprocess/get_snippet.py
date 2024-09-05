@@ -10,6 +10,7 @@ import shutil
 if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.pardir, os.pardir))
     sys.path.insert(0, os.path.join(os.pardir))
+    sys.path.insert(0, os.path.join(os.getcwd()))
 
 from utils.myutil import *
 from utils.param_fun import *
@@ -17,16 +18,17 @@ from utils.param_fun import *
 
 if __name__ == "__main__":
     # reshape for all data
-    mode = 'test' # 'train' or 'test'
-    old_data_root = os.path.join(os.getcwd(),os.pardir,os.pardir, 'test_DATA_UnitMatch')
-    new_data_root = os.path.join(os.getcwd(), os.pardir,os.pardir, 'test_R_DATA_UnitMatch')
+    mode = 'train' # 'train' or 'test'
+    old_data_root = os.path.join(os.getcwd(), os.pardir, 'data_unitmatch')
+    new_data_root = os.path.join(os.getcwd(), os.pardir, 'test_R_DATA_UnitMatch')
     mouse_names = os.listdir(old_data_root)
-    mouse_names = ['AV013',]
+    mouse_names = ['AL031',]
 
     for name in mouse_names:
         name_path = os.path.join(old_data_root, name)
         probes = os.listdir(name_path)
         # probes = ['19011119461',]
+        print(probes)
         for probe in probes:
             name_probe_path = os.path.join(name_path,probe)
             locations = os.listdir(name_probe_path)
