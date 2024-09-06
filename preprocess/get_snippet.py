@@ -23,6 +23,7 @@ if __name__ == "__main__":
     old_data_root = os.path.join(os.getcwd(), os.pardir, 'data_unitmatch')
     new_data_root = os.path.join(os.getcwd(), os.pardir, 'test_R_DATA_UnitMatch')
     mouse_names = os.listdir(old_data_root)
+    mouse_names = mouse_names[1:]
 
     paths_to_raw_data = read_datapaths(mouse_names)
 
@@ -45,7 +46,11 @@ if __name__ == "__main__":
 
             for np_file_name in np_file_names:
                 np_waveform_file = os.path.join(np_path, np_file_name)
+                print(np_waveform_file)
+
                 data = np.load(np_waveform_file) # (82,384,2)
+                print(data.shape)
+                raise ValueError("stopping")
                 if np.any(np.isnan(data)) or np.any(np.isinf(data)):
                     # print("Data contains NaNs or infs, cleaning required.")
                     # data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
