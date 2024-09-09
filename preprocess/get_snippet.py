@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # reshape for all data
     mode = 'train' # 'train' or 'test'
     old_data_root = os.path.join(os.getcwd(), os.pardir, 'data_unitmatch')
-    new_data_root = os.path.join(os.getcwd(), os.pardir, 'test_R_DATA_UnitMatch')           # where data is saved after preprocessing
+    new_data_root = os.path.join(os.getcwd(), os.pardir, 'R_DATA_UnitMatch')           # where data is saved after preprocessing
     mouse_names = os.listdir(old_data_root)
 
     paths_to_raw_data = read_datapaths(mouse_names)

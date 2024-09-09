@@ -28,28 +28,19 @@ class AE_NeuropixelsDataset(Dataset):
 
         for name in self.mouse_names:
             name_path = os.path.join(self.root, name)
-            probes = os.listdir(name_path)
-            for probe in probes:
-                name_probe_path = os.path.join(name_path, probe)
-                locations = os.listdir(name_probe_path)
-                for location in locations:
-                    name_probe_location_path = os.path.join(name_probe_path, location)
-                    dates = os.listdir(name_probe_location_path)
-                    for date in dates:
-                        name_probe_location_date_path = os.path.join(name_probe_location_path, date)
-                        experiments = os.listdir(name_probe_location_date_path)
-                        for experiment in experiments:
-                            experiment_path = os.path.join(name_probe_location_date_path, experiment)
-                            good_units_index = read_good_id_from_mat(os.path.join(experiment_path, 'PreparedData.mat'))
-                            len_good_units = len(good_units_index[good_units_index == 1])
-                            if len_good_units <= self.batch_size:
-                                continue
-                            good_units_files = select_good_units_files(os.path.join(experiment_path, 'RawWaveforms'), good_units_index)
-                            # Store each file name twice to represent two data points
-                            for file in good_units_files:
-                                # self.np_file_names.append((file, 0))  # First half of data
-                                # self.np_file_names.append((file, 1))  # Second half of data
-                                self.np_file_names.append(file)
+            experiments = os.listdir(name_path)
+            for experiment in experiments:
+                experiment_path = os.path.join(name_path, experiment)
+                good_units_index = read_good_id_from_mat(os.path.join(experiment_path, 'PreparedData.mat'))
+                len_good_units = len(good_units_index[good_units_index == 1])
+                if len_good_units <= self.batch_size:
+                    continue
+                good_units_files = select_good_units_files(os.path.join(experiment_path, 'RawWaveforms'), good_units_index)
+                # Store each file name twice to represent two data points
+                for file in good_units_files:
+                    # self.np_file_names.append((file, 0))  # First half of data
+                    # self.np_file_names.append((file, 1))  # Second half of data
+                    self.np_file_names.append(file)
 
         self.n_neurons = len(self.np_file_names)
 
