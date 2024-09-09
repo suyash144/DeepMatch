@@ -21,9 +21,8 @@ if __name__ == "__main__":
     # reshape for all data
     mode = 'train' # 'train' or 'test'
     old_data_root = os.path.join(os.getcwd(), os.pardir, 'data_unitmatch')
-    new_data_root = os.path.join(os.getcwd(), os.pardir, 'test_R_DATA_UnitMatch')
+    new_data_root = os.path.join(os.getcwd(), os.pardir, 'test_R_DATA_UnitMatch')           # where data is saved after preprocessing
     mouse_names = os.listdir(old_data_root)
-    mouse_names = mouse_names[1:]
 
     paths_to_raw_data = read_datapaths(mouse_names)
 
@@ -46,15 +45,25 @@ if __name__ == "__main__":
 
             for np_file_name in np_file_names:
                 np_waveform_file = os.path.join(np_path, np_file_name)
-                print(np_waveform_file)
-
-                data = np.load(np_waveform_file) # (82,384,2)
-                print(data.shape)
-                raise ValueError("stopping")
+                try:
+                    data = np.load(np_waveform_file, allow_pickle=True) # (82,384,2)
+                except:
+                    print(f"Mouse {mouse} had a problem loading its data - skipping to next experiment")
+                    print(np_waveform_file)
+                    f = h5py.File(np_waveform_file, 'r')
+                    data = {
+                        'waveform': f['waveform'],
+                        "MaxSitepos": f["MaxSitepos"]
+                    }
+                    print("Saved as HDF5 -> implies this has already been preprocessed")
+                    break
+                if data.shape != (82,384,2):
+                    print(f"Expected waveform shape to be (82,384,2) - instead got {data.shape}")
                 if np.any(np.isnan(data)) or np.any(np.isinf(data)):
                     # print("Data contains NaNs or infs, cleaning required.")
                     # data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
-                    print("Bad data, just fill with zeros and -1")
+                    print(f"Bad data for mouse {mouse}, just fill with zeros and -1")
+                    print(np_waveform_file)
                     Rwaveform = np.zeros((1,1,1))
                     MaxSitepos = np.array([-1,-1])
                 else:
@@ -62,12 +71,13 @@ if __name__ == "__main__":
                     MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
                 # print('Rwaveform shape:', Rwaveform.shape, 'MaxSitepos shape:', MaxSitepos.shape)
                 # sys.exit()
-                dest_path = np_waveform_file.replace(old_data_root, new_data_root)  # dest means destination 
+                experiment_id = os.path.basename(os.path.dirname(os.path.dirname(experiment)))
+                dest_path = os.path.join(new_data_root, mouse, experiment_id, np_file_name)  # dest means destination 
                 dest_directory = os.path.dirname(dest_path)
                 os.makedirs(dest_directory, exist_ok=True)
 
                 new_data = {
-                    "waveform": Rwaveform,
+                    "waveform": Rwaveform,          # (60,30,2) 
                     "MaxSitepos": MaxSitepos
                 }
                 with h5py.File(dest_path, 'w') as f:
