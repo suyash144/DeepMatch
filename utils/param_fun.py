@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import detrend
 import scipy as sp
+import h5py, os
 
 import pandas as pd
 
@@ -133,3 +134,22 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
     Rwaveform = np.pad(Rwaveform, ((0, 0), (pad_before, pad_after), (0, 0)), 'constant', constant_values=(NewGlobalMean, NewGlobalMean))
     
     return MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform
+
+
+def save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos):
+    """Saves the preprocessed, reduced waveform and the max site position as a HDF5 file.
+    Saves in new_data_root/mouse/experiment_id/np_file_name
+    """
+
+    experiment_id = os.path.basename(os.path.dirname(os.path.dirname(experiment)))
+    dest_path = os.path.join(new_data_root, mouse, experiment_id, np_file_name)  # dest means destination 
+    dest_directory = os.path.dirname(dest_path)
+    os.makedirs(dest_directory, exist_ok=True)
+
+    new_data = {
+        "waveform": Rwaveform,          # (60,30,2) 
+        "MaxSitepos": MaxSitepos
+    }
+    with h5py.File(dest_path, 'w') as f:
+        for key, value in new_data.items():
+            f.create_dataset(key, data=value)

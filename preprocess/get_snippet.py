@@ -48,15 +48,13 @@ if __name__ == "__main__":
                 try:
                     data = np.load(np_waveform_file, allow_pickle=True) # (82,384,2)
                 except:
-                    print(f"Mouse {mouse} had a problem loading its data - skipping to next experiment")
-                    print(np_waveform_file)
+                    # Handles the error where data is saved as a HDF5 file, implying it has already been preprocessed.
                     f = h5py.File(np_waveform_file, 'r')
-                    data = {
-                        'waveform': f['waveform'],
-                        "MaxSitepos": f["MaxSitepos"]
-                    }
+                    Rwaveform = f['waveform']
+                    MaxSitepos = f['MaxSitepos']
+                    save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos)
                     print("Saved as HDF5 -> implies this has already been preprocessed")
-                    break
+                    continue
                 if data.shape != (82,384,2):
                     print(f"Expected waveform shape to be (82,384,2) - instead got {data.shape}")
                 if np.any(np.isnan(data)) or np.any(np.isinf(data)):
@@ -71,16 +69,4 @@ if __name__ == "__main__":
                     MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
                 # print('Rwaveform shape:', Rwaveform.shape, 'MaxSitepos shape:', MaxSitepos.shape)
                 # sys.exit()
-                experiment_id = os.path.basename(os.path.dirname(os.path.dirname(experiment)))
-                dest_path = os.path.join(new_data_root, mouse, experiment_id, np_file_name)  # dest means destination 
-                dest_directory = os.path.dirname(dest_path)
-                os.makedirs(dest_directory, exist_ok=True)
-
-                new_data = {
-                    "waveform": Rwaveform,          # (60,30,2) 
-                    "MaxSitepos": MaxSitepos
-                }
-                with h5py.File(dest_path, 'w') as f:
-                    for key, value in new_data.items():
-                        f.create_dataset(key, data=value)
-                        
+                save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos)
