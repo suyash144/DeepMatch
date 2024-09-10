@@ -9,9 +9,17 @@ mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", 
 def read_datapaths(mice):
     """
     Input should be a list of mouse names as strings, e.g. "AL031"
-    Output is a dict of {mouse:paths to raw waveforms}
+    Output is a dictionary uniquely identifying each (mouse, probe, location) and the relevant recordings
     """
-    raw_waveforms = {}
+    if type(mice) == str:
+        # Sanitise inputs so that a single string can be passed in rather than a list.
+        mice = [mice]
+
+    raw_waveforms_dict = {}
+    raw_waveforms_dict["mouse"] = []
+    raw_waveforms_dict["probe"] = []
+    raw_waveforms_dict["loc"] = []
+    raw_waveforms_dict["recordings"] = []
 
     base = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
 
@@ -34,6 +42,14 @@ def read_datapaths(mice):
                         pass
                     # find the directory to look for the raw waveforms
                     paths = f["UMparam"]["KSDir"]
-                    raw_waveforms[mouse] = np.array(paths)
 
-    return raw_waveforms
+                    # build the dictionary containing all relevant information
+                    raw_waveforms_dict["mouse"].append(mouse)
+                    raw_waveforms_dict["probe"].append(probe)
+                    raw_waveforms_dict["loc"].append(location)
+                    raw_waveforms_dict["recordings"].append(np.array(paths))
+                    # raw_waveforms_dict[mouse] = np.array(paths)
+
+    return raw_waveforms_dict
+
+read_datapaths(mice)
