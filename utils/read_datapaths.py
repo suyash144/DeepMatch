@@ -57,5 +57,3 @@ def read_datapaths(mice):
                     raw_waveforms_dict["recordings"].append(np.array(paths))
 
     return raw_waveforms_dict
-
-read_datapaths(mice)

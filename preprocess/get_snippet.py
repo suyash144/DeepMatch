@@ -20,9 +20,10 @@ from utils.read_datapaths import *
 if __name__ == "__main__":
     # reshape for all data
     mode = 'train' # 'train' or 'test'
-    old_data_root = os.path.join(os.getcwd(), os.pardir, 'data_unitmatch')
-    new_data_root = os.path.join(os.getcwd(), os.pardir, 'R_DATA_UnitMatch')           # where data is saved after preprocessing
+    old_data_root = os.path.join(os.path.dirname(os.getcwd()), 'data_unitmatch')
+    new_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')           # where data is saved after preprocessing
     mouse_names = os.listdir(old_data_root)
+    mouse_names = ["AL031"]
 
     recordings_dict = read_datapaths(mouse_names)
 

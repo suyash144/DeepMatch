@@ -138,8 +138,9 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
 
 # def save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos):
 def save_waveforms_hdf5(mouse, probe, loc, new_data_root, experiment, np_file_name, Rwaveform, MaxSitepos):
-    """Saves the preprocessed, reduced waveform and the max site position as a HDF5 file.
-    Saves in new_data_root/mouse/experiment_id/np_file_name
+    """
+    Saves the preprocessed, reduced waveform and the max site position as a HDF5 file.
+    Saves in new_data_root/mouse/probe/loc/experiment_id/np_file_name
     """
 
     experiment_id = experiment[experiment.find(mouse):]
