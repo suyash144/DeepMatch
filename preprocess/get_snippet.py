@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     f = h5py.File(np_waveform_file, 'r')
                     Rwaveform = f['waveform']
                     MaxSitepos = f['MaxSitepos']
-                    save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos)
+                    save_waveforms_hdf5(mouse, probe, loc, new_data_root, experiment, np_file_name, Rwaveform, MaxSitepos)
                     print("Saved as HDF5 -> implies this has already been preprocessed")
                     continue
                 if data.shape != (82,384,2):
@@ -69,4 +69,6 @@ if __name__ == "__main__":
                     MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
                 # print('Rwaveform shape:', Rwaveform.shape, 'MaxSitepos shape:', MaxSitepos.shape)
                 # sys.exit()
-                save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos)
+                probe = recordings_dict["probe"][i]
+                loc = recordings_dict["loc"][i]
+                save_waveforms_hdf5(mouse, probe, loc, new_data_root, experiment, np_file_name, Rwaveform, MaxSitepos)
