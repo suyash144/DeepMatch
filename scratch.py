@@ -31,3 +31,4 @@ c=(set(used_paths)-set(allowed_paths))
 
 for dir in c:
     shutil.rmtree(os.path.join(r"C:\Users\suyas\R_DATA_UnitMatch\AL031\19011116684\1", dir))
+
