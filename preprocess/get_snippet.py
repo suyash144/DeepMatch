@@ -24,10 +24,10 @@ if __name__ == "__main__":
     new_data_root = os.path.join(os.getcwd(), os.pardir, 'R_DATA_UnitMatch')           # where data is saved after preprocessing
     mouse_names = os.listdir(old_data_root)
 
-    paths_to_raw_data = read_datapaths(mouse_names)
+    recordings_dict = read_datapaths(mouse_names)
 
-    for mouse in paths_to_raw_data:
-        experiments = paths_to_raw_data[mouse]
+    for i, mouse in enumerate(recordings_dict["mouse"]):
+        experiments = recordings_dict["recordings"][i]
         for experiment in experiments:
             # copy PreparedData.mat to new location
             # PreparedData_path = os.path.join(name_probe_location_date_path, experiment, 'PreparedData.mat')
