@@ -8,13 +8,20 @@ mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", 
 
 def read_datapaths(mice):
     """
-    Input should be a list of mouse names as strings, e.g. "AL031"
-    Output is a dictionary uniquely identifying each (mouse, probe, location) and the relevant recordings
+    Input should be a list of mouse names as strings, e.g. ["AL031", ...]
+    Output is a dictionary uniquely identifying each (mouse, probe, location) and the relevant recordings.
+    Structure of output given below...
+
+    raw_waveforms_dict["mouse"] : a list of mouse names (can be repeats)
+    raw_waveforms_dict["probe"] : the corresponding probe for each entry in the mouse list
+    raw_waveforms_dict["loc"] : the corresponding locations on the probe recordings were taken from
+    raw_waveforms_dict["recordings"] : corresponding list where each entry is a numpy array listing all the paths to the recordings folders.
     """
     if type(mice) == str:
         # Sanitise inputs so that a single string can be passed in rather than a list.
         mice = [mice]
 
+    # Initialise output dictionary
     raw_waveforms_dict = {}
     raw_waveforms_dict["mouse"] = []
     raw_waveforms_dict["probe"] = []
@@ -48,7 +55,6 @@ def read_datapaths(mice):
                     raw_waveforms_dict["probe"].append(probe)
                     raw_waveforms_dict["loc"].append(location)
                     raw_waveforms_dict["recordings"].append(np.array(paths))
-                    # raw_waveforms_dict[mouse] = np.array(paths)
 
     return raw_waveforms_dict
 
