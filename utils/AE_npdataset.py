@@ -11,6 +11,7 @@ import h5py
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, Sampler
+import json
 
 
 if __name__ == '__main__':
@@ -29,46 +30,28 @@ class AE_NeuropixelsDataset(Dataset):
         self.np_file_names = []
 
         for name in self.mouse_names:
+            if name=="AV008":
+                # skipping AV008 for now due to spike sorting issue
+                continue
             name_path = os.path.join(self.root, name)
             paths_from_UM = read_datapaths(name)                  # paths on server read from UnitMatch.mat, for this mouse only
             probes = os.listdir(name_path)                        
             for probe in probes:
                 probe_path = os.path.join(name_path, probe)
                 locs = os.listdir(probe_path)
-                if os.path.isfile(locs[0]):
-                    continue
-                for i, p in enumerate(paths_from_UM["probe"]):
-                    if p!=probe:
-                        del paths_from_UM["mouse"][i]
-                        del paths_from_UM["probe"][i]
-                        del paths_from_UM["loc"][i]
-                        del paths_from_UM["recordings"][i]
                 for loc in locs:
                     loc_path = os.path.join(probe_path, loc)
                     experiments = os.listdir(loc_path)
-                    for i, l in enumerate(paths_from_UM["loc"]):
-                        if l!=loc:
-                            del paths_from_UM["mouse"][i]
-                            del paths_from_UM["probe"][i]
-                            del paths_from_UM["loc"][i]
-                            del paths_from_UM["recordings"][i]
-                    if len(paths_from_UM["recordings"]) != 1:
-                        print("No. of possible experiments: ", len(paths_from_UM["recordings"]))
-                        raise ValueError(f"Unable to uniquely determine the experiment from (mouse, probe, location):{name, probe, loc}")
-                    
-                    server_paths = paths_from_UM["recordings"][0]           # this is now just a list of filepaths
-
-                    for i, experiment in enumerate(experiments):
-                        experiment_path = os.path.join(loc_path, experiment)     
-
-                        if len(experiments) != len(server_paths):
-                            # check the local data structure matches the one on the server
-                            print("No. of experiments on the local machine: ", len(experiments))
-                            print("No. of filepaths from UnitMatch.mat: ", len(server_paths))
-                            raise ValueError("CAUTION: there is a mismatch between data on local machine and server - please check")
-                        
-                        good_units_index = read_good_id_from_mat(os.path.join(server_paths[i], 'PreparedData.mat'))
-                        len_good_units = len(good_units_index[good_units_index == 1])
+                    for experiment in experiments:
+                        experiment_path = os.path.join(loc_path, experiment)
+                        try:
+                            metadata_file = os.path.join(experiment_path, "metadata.json")
+                        except:
+                            print(experiment_path)
+                            raise ValueError("Did not find metadata.json file for this experiment")
+                        metadata = json.load(open(metadata_file))
+                        good_units_index = metadata["good_ids"]
+                        len_good_units = sum(good_units_index)
                         if len_good_units <= self.batch_size:
                             continue
                         good_units_files = select_good_units_files(os.path.join(experiment_path, 'RawWaveforms'), good_units_index)
