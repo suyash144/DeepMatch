@@ -115,6 +115,7 @@ def run(args):
 
     np_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
     np_dataset = AE_NeuropixelsDataset(root=np_root,batch_size=args.batchsize)
+    print(f"Total size of dataset (train + val + test): {len(np_dataset)}")
     train_size = int(0.9 * len(np_dataset))
     val_size = int(0.05 * len(np_dataset))
     test_size = len(np_dataset) - train_size - val_size

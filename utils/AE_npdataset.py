@@ -34,7 +34,6 @@ class AE_NeuropixelsDataset(Dataset):
                 # skipping AV008 for now due to spike sorting issue
                 continue
             name_path = os.path.join(self.root, name)
-            paths_from_UM = read_datapaths(name)                  # paths on server read from UnitMatch.mat, for this mouse only
             probes = os.listdir(name_path)                        
             for probe in probes:
                 probe_path = os.path.join(name_path, probe)
@@ -54,7 +53,7 @@ class AE_NeuropixelsDataset(Dataset):
                         len_good_units = sum(good_units_index)
                         if len_good_units <= self.batch_size:
                             continue
-                        good_units_files = select_good_units_files(os.path.join(experiment_path, 'RawWaveforms'), good_units_index)
+                        good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
                         # Store each file name twice to represent two data points
                         for file in good_units_files:
                             # self.np_file_names.append((file, 0))  # First half of data
