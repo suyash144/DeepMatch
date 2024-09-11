@@ -45,6 +45,9 @@ def sort_good_channels(goodChannelMap, goodpos):
 
     # Safety check: ensure there are exactly two unique y-axis values
     if len(unique_y_values) != 2:
+        # TODO: adapt this code to be robust to Neuropixels 1.0 recordings as well as 2.0
+        print(f"Channel Map: {goodChannelMap}")
+        print(f"Pos: {goodpos}")
         raise ValueError(f"There should be exactly two unique y-axis values for Neuropixels 2.0 shank - instead got {len(unique_y_values)}: [{unique_y_values}]")
     
     # Step 2: Split channels based on the y-axis value
@@ -137,27 +140,20 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
 
 
 # def save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos):
-def save_waveforms_hdf5(mouse, probe, loc, new_data_root, experiment, np_file_name, Rwaveform, MaxSitepos):
+def save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos):
     """
     Saves the preprocessed, reduced waveform and the max site position as a HDF5 file.
     Saves in new_data_root/mouse/probe/loc/experiment_id/np_file_name
     """
 
-    experiment_id = experiment[experiment.find(mouse):]
-    experiment_id = experiment_id.replace(mouse, '')
-    experiment_id = experiment_id.replace("\\", "_")
-    dest_path = os.path.join(new_data_root, mouse, probe, loc, experiment_id, np_file_name)
+    dest_path = os.path.join(dest_path, "processed_waveforms", np_file_name)
     dest_directory = os.path.dirname(dest_path)
     os.makedirs(dest_directory, exist_ok=True)
 
     new_data = {
         "waveform": Rwaveform,          # (60,30,2) 
-        "MaxSitepos": MaxSitepos,
-        "mouse": mouse,
-        "probe": probe,
-        "loc": loc,
-        "experiment_id": experiment_id
+        "MaxSitepos": MaxSitepos
     }
-    with h5py.File(dest_path, 'w-') as f:
+    with h5py.File(dest_path, 'w') as f:
         for key, value in new_data.items():
             f.create_dataset(key, data=value)
