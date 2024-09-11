@@ -1,4 +1,4 @@
-# This file will contain ll the necessary function for processing waveforms
+# This file will contain all the necessary functions for processing waveforms
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ def sort_good_channels(goodChannelMap, goodpos):
         # print(f"Channel Map: {goodChannelMap}")
         # print(f"Pos: {goodpos}")
         # raise ValueError(f"There should be exactly two unique y-axis values for Neuropixels 2.0 shank - instead got {len(unique_y_values)}: [{unique_y_values}]")
-        return 0,0
+        return [-1],[-1]
     # Step 2: Split channels based on the y-axis value
     # channels_y_min = goodChannelMap[goodpos[:, 0] == unique_y_values[0]]
     # channels_y_max = goodChannelMap[goodpos[:, 0] == unique_y_values[1]]
@@ -118,9 +118,9 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
     goodpos = ChannelPos * np.tile(goodidx, (2,1)).T
     goodpos = goodpos[goodidx,:]
     sorted_goodChannelMap,sorted_goodpos = sort_good_channels(goodChannelMap, goodpos)
-    if sorted_goodChannelMap == 0:
-        # we have a spike sorting error so need to discard this recording
-        return np.array([-1,-1]), np.array([-1,-1]), 0, 0, np.zeros((1,1,1))
+    if sorted_goodChannelMap[0]==-1 and sorted_goodpos[0]==-1:
+        # we have a spike sorting error so need to 0 this recording
+        return np.array([-1,-1]), np.array([-1,-1]), [0], [0], np.zeros((1,1,1))
     Rwaveform = waveform[:, sorted_goodChannelMap, :] #selecting the good channels
     
     ## this part is tricks to make the data proper for DNN training
@@ -145,7 +145,6 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
     return MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform
 
 
-# def save_waveforms_hdf5(experiment, new_data_root, mouse, np_file_name, Rwaveform, MaxSitepos):
 def save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos):
     """
     Saves the preprocessed, reduced waveform and the max site position as a HDF5 file.

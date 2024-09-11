@@ -24,7 +24,6 @@ if __name__ == "__main__":
     old_data_root = os.path.join(os.path.dirname(os.getcwd()), 'data_unitmatch')
     new_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')           # where data is saved after preprocessing
     mouse_names = os.listdir(old_data_root)
-    mouse_names = mouse_names[4:]
 
     recordings_dict = read_datapaths(mouse_names)
 
@@ -86,11 +85,11 @@ if __name__ == "__main__":
                     MaxSitepos = np.array([-1,-1])
                 else:
                     # print('np_file_name', np_file_name)
-                    try:
-                        MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
-                    except:
-                        print(f"Failed to extract waveforms for {np_waveform_file}")
-                        pass
+                    # try:
+                    MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
+                    # except:
+                    #     print(f"Failed to extract waveforms for {np_waveform_file}")
+                    #     pass
 
                 save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos)
         print(f"Finished processing data for mouse {mouse}")
