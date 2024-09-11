@@ -45,11 +45,14 @@ def sort_good_channels(goodChannelMap, goodpos):
 
     # Safety check: ensure there are exactly two unique y-axis values
     if len(unique_y_values) != 2:
-        # TODO: adapt this code to be robust to Neuropixels 1.0 recordings as well as 2.0
-        print(f"Channel Map: {goodChannelMap}")
-        print(f"Pos: {goodpos}")
-        raise ValueError(f"There should be exactly two unique y-axis values for Neuropixels 2.0 shank - instead got {len(unique_y_values)}: [{unique_y_values}]")
-    
+        # TODO: adapt this code to be robust to Neuropixels 1.0 recordings as well as 2.0.
+        # For now we are only using Neuropixels 2.0 data -> if we enter this block it means there was a mistake in spike sorting
+        # Therefore the fix for now is to use return 0s so that we can handle this in extract_Rwaveforms
+
+        # print(f"Channel Map: {goodChannelMap}")
+        # print(f"Pos: {goodpos}")
+        # raise ValueError(f"There should be exactly two unique y-axis values for Neuropixels 2.0 shank - instead got {len(unique_y_values)}: [{unique_y_values}]")
+        return 0,0
     # Step 2: Split channels based on the y-axis value
     # channels_y_min = goodChannelMap[goodpos[:, 0] == unique_y_values[0]]
     # channels_y_max = goodChannelMap[goodpos[:, 0] == unique_y_values[1]]
@@ -115,6 +118,9 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
     goodpos = ChannelPos * np.tile(goodidx, (2,1)).T
     goodpos = goodpos[goodidx,:]
     sorted_goodChannelMap,sorted_goodpos = sort_good_channels(goodChannelMap, goodpos)
+    if sorted_goodChannelMap == 0:
+        # we have a spike sorting error so need to discard this recording
+        return np.array([-1,-1]), np.array([-1,-1]), 0, 0, np.zeros((1,1,1))
     Rwaveform = waveform[:, sorted_goodChannelMap, :] #selecting the good channels
     
     ## this part is tricks to make the data proper for DNN training

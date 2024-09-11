@@ -61,6 +61,8 @@ class AE_NeuropixelsDataset(Dataset):
                             self.np_file_names.append(file)
 
         self.n_neurons = len(self.np_file_names)
+        if self.n_neurons < 1:
+            print("No data! Try reducing batch size?")
 
     def __len__(self):
         return self.n_neurons
