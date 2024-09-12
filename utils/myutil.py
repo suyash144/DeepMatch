@@ -5,6 +5,7 @@ import h5py
 import math,random
 import re
 import matplotlib.pyplot as plt
+import json
 
 
 def is_date_filename(filename):
@@ -213,7 +214,6 @@ def get_Sitepos_dist(day1_MaxSitepos,day2_MaxSitepos):
                 dist_matrix_actoss_days[i,j] = -1 # different shank,-1 means infinite distance
     return dist_matrix_actoss_days
 
-
 def simple_filter_matrix(sim_matrix,row_MaxSitepos,col_MaxSitepos):
     dist_matrix = get_Sitepos_dist(row_MaxSitepos,col_MaxSitepos)
     # sparsification
@@ -241,3 +241,49 @@ def find_index_np(arr, x):
         return indices[0]  # Return the first index where the value is x
     else:
         return -1 
+    
+def read_good_ids(root, batch_size, finetune:bool):
+    """
+    Output depends on whether you want to pre-train the encoder (finetune=False)
+    or finetune it via contrastive learning (finetune=True). This must be specified.
+    """
+    mouse_names = os.listdir(root)
+    np_file_names = []
+    experiment_unit_map = {}
+
+    for name in mouse_names:
+        if name=="AV008":
+            # skipping AV008 for now due to spike sorting issue
+            continue
+        name_path = os.path.join(root, name)
+        probes = os.listdir(name_path)                        
+        for probe in probes:
+            probe_path = os.path.join(name_path, probe)
+            locs = os.listdir(probe_path)
+            for loc in locs:
+                loc_path = os.path.join(probe_path, loc)
+                experiments = os.listdir(loc_path)
+                for experiment in experiments:
+                    experiment_path = os.path.join(loc_path, experiment)
+                    try:
+                        metadata_file = os.path.join(experiment_path, "metadata.json")
+                        metadata = json.load(open(metadata_file))
+                    except:
+                        print(experiment_path)
+                        raise ValueError("Did not find metadata.json file for this experiment")
+                    good_units_index = metadata["good_ids"]
+                    len_good_units = sum(good_units_index)
+                    if len_good_units <= batch_size:
+                        continue
+                    good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
+
+                    if finetune:
+                        experiment_unit_map[experiment_path] = good_units_files
+                    else:
+                        for file in good_units_files:
+                            np_file_names.append(file)
+    
+    if finetune:
+        return [(exp, file) for exp, files in experiment_unit_map.items() for file in files]
+    else:
+        return np_file_names

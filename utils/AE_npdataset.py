@@ -15,10 +15,10 @@ import json
 
 
 if __name__ == '__main__':
-    from myutil import read_good_id_from_mat, select_good_units_files,is_date_filename
+    from myutil import read_good_id_from_mat, select_good_units_files,is_date_filename, read_good_ids
     from read_datapaths import *
 else:
-    from utils.myutil import read_good_id_from_mat,select_good_units_files,is_date_filename
+    from utils.myutil import read_good_id_from_mat,select_good_units_files,is_date_filename, read_good_ids
     from utils.read_datapaths import *
 
     
@@ -27,39 +27,8 @@ class AE_NeuropixelsDataset(Dataset):
         self.root = root
         self.mouse_names = os.listdir(self.root)
         self.batch_size = batch_size
-        self.np_file_names = []
 
-        for name in self.mouse_names:
-            if name=="AV008":
-                # skipping AV008 for now due to spike sorting issue
-                continue
-            name_path = os.path.join(self.root, name)
-            probes = os.listdir(name_path)                        
-            for probe in probes:
-                probe_path = os.path.join(name_path, probe)
-                locs = os.listdir(probe_path)
-                for loc in locs:
-                    loc_path = os.path.join(probe_path, loc)
-                    experiments = os.listdir(loc_path)
-                    for experiment in experiments:
-                        experiment_path = os.path.join(loc_path, experiment)
-                        try:
-                            metadata_file = os.path.join(experiment_path, "metadata.json")
-                            metadata = json.load(open(metadata_file))
-                        except:
-                            print(experiment_path)
-                            raise ValueError("Did not find metadata.json file for this experiment")
-                        good_units_index = metadata["good_ids"]
-                        len_good_units = sum(good_units_index)
-                        if len_good_units <= self.batch_size:
-                            continue
-                        good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
-                        # Store each file name twice to represent two data points
-                        for file in good_units_files:
-                            # self.np_file_names.append((file, 0))  # First half of data
-                            # self.np_file_names.append((file, 1))  # Second half of data
-                            self.np_file_names.append(file)
-
+        self.np_file_names = read_good_ids(self.root, self.batch_size, finetune=False)
         self.n_neurons = len(self.np_file_names)
         if self.n_neurons < 1:
             print("No data! Try reducing batch size?")
