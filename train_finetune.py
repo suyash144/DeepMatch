@@ -99,14 +99,14 @@ def train(epoch, model, projector, optimizer, train_loader, clip_loss, writer):
     return 
 
 def run(args):
-    save_folder = os.path.join('../ModelExp/experiments',  args.exp_name)
+    save_folder = os.path.join('ModelExp','experiments',  args.exp_name)
     ckpt_folder = os.path.join(save_folder,  'ckpt')
     log_folder = os.path.join(save_folder,  'log')
     os.makedirs(ckpt_folder, exist_ok=True)
     os.makedirs(log_folder, exist_ok=True)
     writer = SummaryWriter(log_dir=log_folder)
 
-    train_data_root = os.path.join(os.getcwd(), os.pardir, 'R_DATA_UnitMatch')
+    train_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
     np_dataset = NeuropixelsDataset(root=train_data_root,batch_size=args.batchsize, mode='train')
     train_sampler = TrainExperimentBatchSampler(np_dataset, args.batchsize, shuffle=True)
     train_loader = DataLoader(np_dataset, batch_sampler=train_sampler)
@@ -119,7 +119,7 @@ def run(args):
 
     model = SpatioTemporalCNN_V2(n_channel=30,n_time=60,n_output=256).to(device)
     model = model.double()
-    finetune_folder = os.path.join('../ModelExp/AE_experiments',  args.finetune)
+    finetune_folder = os.path.join('ModelExp','AE_experiments',  args.finetune)
     ckpt_finetune_folder = os.path.join(finetune_folder,  'ckpt')
     AE_model_path = os.path.join(ckpt_finetune_folder, 'ckpt_epoch_299')
     checkpoint = torch.load(AE_model_path)
