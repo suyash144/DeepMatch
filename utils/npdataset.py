@@ -10,6 +10,7 @@ import h5py
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader,Sampler
+import json
 
 
 if __name__ == '__main__':
@@ -27,6 +28,9 @@ class NeuropixelsDataset(Dataset):
         self.mode = mode
 
         for name in self.mouse_names:
+            if name=="AV008":
+                # skipping AV008 for now due to spike sorting issue
+                continue
             name_path = os.path.join(self.root, name)
             probes = os.listdir(name_path)
             for probe in probes:
@@ -34,22 +38,24 @@ class NeuropixelsDataset(Dataset):
                 locations = os.listdir(name_probe_path)
                 for location in locations:
                     name_probe_location_path = os.path.join(name_probe_path, location)
-                    dates = os.listdir(name_probe_location_path)
-                    dates = [date for date in dates if is_date_filename(date)]
-                    for date in dates:
-                        name_probe_location_date_path = os.path.join(name_probe_location_path, date)
-                        experiments = os.listdir(name_probe_location_date_path)
-                        for experiment in experiments:
-                            experiment_path = os.path.join(name_probe_location_date_path, experiment)
-                            good_units_index = read_good_id_from_mat(os.path.join(experiment_path, 'PreparedData.mat'))
-                            len_good_units = len(good_units_index[good_units_index == 1])
-                            if len_good_units < self.batch_size:
-                                continue
-                            good_units_files = select_good_units_files(os.path.join(experiment_path, 'RawWaveforms'), good_units_index)
-                            # Group by experiment
-                            self.experiment_unit_map[experiment_path] = good_units_files
-                            # key = name + '_' + probe + '_' + location + '_' + date + '_' + experiment
-                            # self.data_dictionary[key] = good_units_files
+                    experiments = os.listdir(name_probe_location_path)
+                    for experiment in experiments:
+                        experiment_path = os.path.join(name_probe_location_path, experiment)
+                        try:
+                            metadata_file = os.path.join(experiment_path, "metadata.json")
+                            metadata = json.load(open(metadata_file))
+                        except:
+                            print(experiment_path)
+                            raise ValueError("Did not find metadata.json file for this experiment")
+                        good_units_index = metadata["good_ids"]
+                        len_good_units = sum(good_units_index)
+                        if len_good_units <= self.batch_size:
+                            continue
+                        good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
+                        # Group by experiment
+                        self.experiment_unit_map[experiment_path] = good_units_files
+                        # key = name + '_' + probe + '_' + location + '_' + date + '_' + experiment
+                        # self.data_dictionary[key] = good_units_files
 
         self.all_files = [(exp, file) for exp, files in self.experiment_unit_map.items() for file in files]
 
@@ -223,7 +229,7 @@ class ValidationExperimentBatchSampler(Sampler):
 if __name__ == "__main__":
     # train dataset
     batch_size = 10
-    train_data_root = os.path.join(os.getcwd(), os.pardir,os.pardir, 'R_DATA_UnitMatch')
+    train_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
     train_dataset = NeuropixelsDataset(root=train_data_root,batch_size=batch_size, mode='train')
     train_sampler = TrainExperimentBatchSampler(train_dataset,batch_size, shuffle=True)
     train_loader = DataLoader(train_dataset, batch_sampler=train_sampler)
