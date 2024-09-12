@@ -45,10 +45,10 @@ class AE_NeuropixelsDataset(Dataset):
                         experiment_path = os.path.join(loc_path, experiment)
                         try:
                             metadata_file = os.path.join(experiment_path, "metadata.json")
+                            metadata = json.load(open(metadata_file))
                         except:
                             print(experiment_path)
                             raise ValueError("Did not find metadata.json file for this experiment")
-                        metadata = json.load(open(metadata_file))
                         good_units_index = metadata["good_ids"]
                         len_good_units = sum(good_units_index)
                         if len_good_units <= self.batch_size:
@@ -84,5 +84,5 @@ class AE_NeuropixelsDataset(Dataset):
         return data
 
 
-np_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
-np_dataset = AE_NeuropixelsDataset(root=np_root,batch_size=32)
+# np_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
+# np_dataset = AE_NeuropixelsDataset(root=np_root,batch_size=32)
