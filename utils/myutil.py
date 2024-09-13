@@ -284,6 +284,6 @@ def read_good_ids(root, batch_size, finetune:bool):
                             np_file_names.append(file)
     
     if finetune:
-        return [(exp, file) for exp, files in experiment_unit_map.items() for file in files]
+        return experiment_unit_map
     else:
         return np_file_names

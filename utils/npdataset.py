@@ -27,7 +27,8 @@ class NeuropixelsDataset(Dataset):
         self.batch_size = batch_size
         self.mode = mode
 
-        self.all_files = read_good_ids(self.root, self.batch_size, finetune=True)
+        self.experiment_unit_map = read_good_ids(self.root, self.batch_size, finetune=True)
+        self.all_files = [(exp, file) for exp, files in self.experiment_unit_map.items() for file in files]
 
     def __len__(self):
         return len(self.all_files)
@@ -173,6 +174,7 @@ class ValidationExperimentBatchSampler(Sampler):
         self.data_source = data_source
         self.shuffle = shuffle
         self.experiment_batches = self._create_batches()
+        print(f"No. of experiment batches: {len(self.experiment_batches)}")
 
     def _create_batches(self):
         batches = []
