@@ -1,11 +1,18 @@
+import os, sys
+
+if __name__ == '__main__':
+    sys.path.insert(0, os.getcwd())
+    sys.path.insert(0, os.path.join(os.getcwd(), os.pardir))
+
 from utils.losses import *
 from utils.npdataset import NeuropixelsDataset, ValidationExperimentBatchSampler
 import numpy as np
 from models.mymodel import *
-import os
 from torch.utils.data import DataLoader
 import tqdm
 from utils import metric
+
+
 
 device = "cpu"
 

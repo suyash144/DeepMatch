@@ -119,7 +119,7 @@ def normalize_waveform(waveform):
     return waveform
 
 def load_mouse_data(mouse,probe,location,dates,exps,mode='test'):
-    base_path = os.path.join(os.getcwd(),os.pardir,os.pardir)
+    base_path = os.path.join(os.getcwd(),os.pardir)
     if mode == 'test':
         base_path = os.path.join(base_path,'test_R_DATA_UnitMatch')
     else:
@@ -265,6 +265,9 @@ def read_good_ids(root, batch_size, finetune:bool):
                 experiments = os.listdir(loc_path)
                 for experiment in experiments:
                     experiment_path = os.path.join(loc_path, experiment)
+                    if not os.path.isdir(experiment_path):
+                        print(experiment)
+                        continue
                     try:
                         metadata_file = os.path.join(experiment_path, "metadata.json")
                         metadata = json.load(open(metadata_file))

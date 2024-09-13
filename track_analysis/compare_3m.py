@@ -7,8 +7,8 @@ import os, sys
 import numpy as np
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.path.join(os.pardir, os.pardir))
-    sys.path.insert(0, os.path.join(os.pardir))
+    sys.path.insert(0, os.getcwd())
+    print(sys.path)
 
 from utils.myutil import *
 
@@ -119,17 +119,17 @@ def plot_comparison_pairs_venn3(pred_unitmatch, pred_dnn, pred_func, mouse, mode
 if __name__ == '__main__':
     # train
     mode = 'test' # 'train' or 'test'
-    mouse = 'AV013'
-    probe = '19011119461'
-    location = '8'
-    dates = ['2022-06-09', '2022-06-10']
-    exps = ['AV013_2022-06-09_ActivePassive_g0_t0-imec0-ap', 
-            'AV013_2022-06-10_ActivePassive_g0_t0-imec0-ap']
+    mouse = 'AL031'
+    probe = '19011116684'
+    location = '1'
+    dates = ['2019-10-01', '2019-10-02']
+    exp_ids = [r"_2019-10-01_1__2019-10-01_bank0_g0__2019-10-01_bank0_g0_imec0_PyKS_output", 
+            r"_2019-10-02_1__2019-10-02_bank0_g0__2019-10-02_bank0_g0_imec0_PyKS_output"]
     session_pair = '2'
     print('mouse', mouse, 'session_pair', session_pair)
 
     # read good id
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exps,mode)
+    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exp_ids,mode)
     len_good_units_1 = len(good_units_files_1)
     len_good_units_2 = len(good_units_files_2)
 
