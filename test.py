@@ -37,8 +37,10 @@ projector = projector.double()
 day_1 = r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output"
 day_2 = r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output"
 
-train_data_root = os.path.join(os.path.dirname(os.getcwd()), 'test_data')
-test_dataset = NeuropixelsDataset(root=train_data_root, batch_size=32, mode='val')
+# These 2 experiments are stored in test_data folder so we use that as the root folder.
+
+test_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UNITMATCH')
+test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val')
 test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = True)
 test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
 
@@ -76,4 +78,3 @@ with torch.no_grad():
     print(f"Average loss: {losses.avg}")
     print(f"Experiment accuracies: {np.mean(experiment_accuracies)}")
 
-# Construct similarity matrix
