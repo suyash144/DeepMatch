@@ -13,7 +13,17 @@ import tqdm
 from utils import metric
 
 
-def test(model_name, device = "cpu"):
+def test(mouse, probe, loc, model_name, device = "cpu"):
+    """
+    Arguments:
+    mouse: mouse name
+    probe: probe
+    loc: location on probe
+    These 3 arguments together should also specify the filepath to the folder of experiments
+    for this specific combination of (mouse, probe, loc)
+    model_name: name of saved (trained) model you wish to load for testing (within ModelExp/experiments)
+    device: optional, specify if e.g. using cuda
+    """
 
     # Load the trained model
     model = SpatioTemporalCNN_V2(n_channel=30,n_time=60,n_output=256).to(device)
@@ -35,14 +45,8 @@ def test(model_name, device = "cpu"):
     projector = Projector(input_dim=256, output_dim=128, hidden_dim=128, n_hidden_layers=1, dropout=0.1).to(device)
     projector = projector.double()
 
-    # Processed data:
-    rec1 = r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output"
-    rec2 = r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output"
-
-    # These 2 experiments are stored in test_data folder so we use that as the root folder.
-
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UNITMATCH')
-    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='train')
+    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
     test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = True)
     test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
 
@@ -80,4 +84,4 @@ def test(model_name, device = "cpu"):
         print(f"Average loss: {losses.avg}")
         print(f"Experiment accuracies: {np.mean(experiment_accuracies)}")
 
-test("test")
+test("AL032", "19011111882", "2", "test")

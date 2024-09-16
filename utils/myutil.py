@@ -266,7 +266,7 @@ def read_good_ids(root, batch_size, finetune:bool):
                 for experiment in experiments:
                     experiment_path = os.path.join(loc_path, experiment)
                     good_units_files = read_good_files(experiment_path, batch_size)
-                    if good_units_files == None:
+                    if good_units_files is None:
                         continue
                     if finetune:
                         experiment_unit_map[experiment_path] = good_units_files
