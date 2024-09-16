@@ -14,20 +14,32 @@ import json
 
 
 if __name__ == '__main__':
-    from myutil import read_good_id_from_mat, select_good_units_files,is_date_filename, read_good_ids
+    from myutil import read_good_id_from_mat, select_good_units_files,is_date_filename, read_good_ids, read_good_files
 else:
-    from utils.myutil import read_good_id_from_mat,select_good_units_files,is_date_filename, read_good_ids
+    from utils.myutil import read_good_id_from_mat,select_good_units_files,is_date_filename, read_good_ids, read_good_files
 
     
 class NeuropixelsDataset(Dataset):
-    def __init__(self, root: str, batch_size = 30, mode = 'train'):
+    def __init__(self, root: str, batch_size = 30, mode = 'train', m = None, p = None, l = None):
         self.root = root
         self.mouse_names = os.listdir(self.root)
         self.experiment_unit_map = {}  # Maps experiment to its units' file paths
         self.batch_size = batch_size
         self.mode = mode
-
-        self.experiment_unit_map = read_good_ids(self.root, self.batch_size, finetune=True)
+        if self.mode == 'train':
+            self.experiment_unit_map = read_good_ids(self.root, self.batch_size, finetune=True)
+        elif self.mode == "val":
+            # In validation mode, we only want to test within a specific (mouse, probe, loc) combination
+            folder_containing_experiments = os.path.join(root, m, p, l)
+            exps = os.listdir(folder_containing_experiments)
+            for exp in exps:
+                exp_path = os.path.join(folder_containing_experiments, exp)
+                good_units_files = read_good_files(exp_path, self.batch_size)
+                if good_units_files is None:
+                    continue
+                self.experiment_unit_map[exp] = good_units_files
+        else:
+            raise ValueError("Invalid mode for initialising NeuropixelsDataset")
         self.all_files = [(exp, file) for exp, files in self.experiment_unit_map.items() for file in files]
 
     def __len__(self):
