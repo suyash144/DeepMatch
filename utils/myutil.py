@@ -265,21 +265,9 @@ def read_good_ids(root, batch_size, finetune:bool):
                 experiments = os.listdir(loc_path)
                 for experiment in experiments:
                     experiment_path = os.path.join(loc_path, experiment)
-                    if not os.path.isdir(experiment_path):
-                        print(experiment)
+                    good_units_files = read_good_files(experiment_path, batch_size)
+                    if good_units_files == None:
                         continue
-                    try:
-                        metadata_file = os.path.join(experiment_path, "metadata.json")
-                        metadata = json.load(open(metadata_file))
-                    except:
-                        print(experiment_path)
-                        raise ValueError("Did not find metadata.json file for this experiment")
-                    good_units_index = metadata["good_ids"]
-                    len_good_units = sum(good_units_index)
-                    if len_good_units <= batch_size:
-                        continue
-                    good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
-
                     if finetune:
                         experiment_unit_map[experiment_path] = good_units_files
                     else:
@@ -290,3 +278,20 @@ def read_good_ids(root, batch_size, finetune:bool):
         return experiment_unit_map
     else:
         return np_file_names
+    
+
+def read_good_files(experiment_path, batch_size):
+    if not os.path.isdir(experiment_path):
+        return None
+    try:
+        metadata_file = os.path.join(experiment_path, "metadata.json")
+        metadata = json.load(open(metadata_file))
+    except:
+        print(experiment_path)
+        raise ValueError("Did not find metadata.json file for this experiment")
+    good_units_index = metadata["good_ids"]
+    len_good_units = sum(good_units_index)
+    if len_good_units <= batch_size:
+        return None
+    good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
+    return good_units_files
