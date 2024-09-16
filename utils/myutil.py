@@ -278,7 +278,6 @@ def read_good_ids(root, batch_size, finetune:bool):
         return experiment_unit_map
     else:
         return np_file_names
-    
 
 def read_good_files(experiment_path, batch_size):
     if not os.path.isdir(experiment_path):

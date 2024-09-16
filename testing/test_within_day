@@ -13,7 +13,7 @@ import tqdm
 from utils import metric
 
 
-def test(mouse, probe, loc, model_name, device = "cpu"):
+def test_within_day(mouse, probe, loc, model_name, device = "cpu"):
     """
     Arguments:
     mouse: mouse name
@@ -57,43 +57,31 @@ def test(mouse, probe, loc, model_name, device = "cpu"):
 
     with torch.no_grad():
         progress_bar = tqdm.tqdm(total=len(test_loader))
-
-        # Initialise the matrix that will store the pairwise probabilities for every combination of neurons
-        prob_matrix = np.empty((len(test_dataset), len(test_dataset)))
-        for i, (estimates_i, candidates_i,_,_,_) in enumerate(test_loader):
+        for estimates, candidates,_,_,_ in test_loader:
             if torch.cuda.is_available():
-                estimates_i = estimates_i.cuda()
-                # candidates_i = candidates_i.cuda()
-            # print(estimates_i.shape)        # [b, t=60, c=30]
-            # print(candidates_i.shape)       # [b, t=60, c=30]
-            bsz_i = estimates_i.shape[0]
-            # Forward pass
-            enc_estimates_i = model(estimates_i) # shape [bsz, channel*time] - actually [b, 256]
-            # enc_candidates_i = model(candidates_i) # shape [bsz, channel*time] - actually [b, 256]
-            # proj_estimates_i = projector(enc_estimates_i)           # [b, 128]
-            # proj_candidates_i = projector(enc_candidates_i)         # [b, 128]
-            # loss_clip = clip_loss(proj_estimates_i, proj_candidates_i)
-            # loss = loss_clip
-            # losses.update(loss.item(), bsz)
-            for j, (estimates_j, candidates_j,_,_,_) in enumerate(test_loader):
-                if torch.cuda.is_available():
-                    # estimates_j = estimates_j.cuda()
-                    candidates_j = candidates_j.cuda()
-                bsz_j = candidates_j.shape[0]
-                # enc_estimates_j = model(estimates_j)
-                enc_candidates_j = model(candidates_j)
-                prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
+                estimates = estimates.cuda()
+                candidates = candidates.cuda()
 
-            # probs = clip_prob(enc_estimates_i, enc_candidates_i)     # [b, b]    
-            # predicted_indices = torch.argmax(probs, dim=1)  # Get the index of the max probability for each batch element
-            # ground_truth_indices = torch.arange(bsz, device=device)  # Diagonal indices as ground truth
-            # correct_predictions = (predicted_indices == ground_truth_indices).sum().item()  # Count correct predictions
-            # accuracy = correct_predictions / bsz
-            # experiment_accuracies.append(accuracy)
+            bsz = estimates.shape[0]
+            # Forward pass
+            enc_estimates = model(estimates) # shape [bsz, channel*time]
+            enc_candidates = model(candidates) # shape [bsz, channel*time]
+            proj_estimates = projector(enc_estimates)
+            proj_candidates = projector(enc_candidates)
+            loss_clip = clip_loss(proj_estimates, proj_candidates)
+            loss = loss_clip
+            losses.update(loss.item(), bsz)
+
+            probs = clip_prob(enc_estimates, enc_candidates)
+            predicted_indices = torch.argmax(probs, dim=1)  # Get the index of the max probability for each batch element
+            ground_truth_indices = torch.arange(bsz, device=device)  # Diagonal indices as ground truth
+            correct_predictions = (predicted_indices == ground_truth_indices).sum().item()  # Count correct predictions
+            accuracy = correct_predictions / bsz
+            experiment_accuracies.append(accuracy)
             progress_bar.update(1)
         progress_bar.close()
-    return prob_matrix
-        # print(f"Average loss: {losses.avg}")
-        # print(f"Experiment accuracies: {np.mean(experiment_accuracies)}")
 
-probs = test("AL032", "19011111882", "2", "test")
+        print(f"Average loss: {losses.avg}")
+        print(f"Experiment accuracies: {np.mean(experiment_accuracies)}")
+
+test_within_day("AL032", "19011111882", "2", "test")
