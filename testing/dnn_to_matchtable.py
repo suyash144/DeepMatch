@@ -28,9 +28,7 @@ def dnn_to_matchtable():
                     paths = um["UMparam"]["KSDir"]  # list of all the paths, order corresponds to RecSes numbers
                     exps = os.listdir(name_probe_location)
                     exps.remove("matchtable.csv")
-                    for exp in exps:
-                        # compare all experiments against each other and add to match table
-                        pass
+
                 
 
 dnn_to_matchtable()
