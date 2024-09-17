@@ -45,6 +45,7 @@ if __name__ == "__main__":
             experiment_id = experiment[experiment.find(mouse):]
             experiment_id = experiment_id.replace(mouse, '')
             experiment_id = experiment_id.replace("\\", "_")
+            experiment_id = get_exp_id(experiment, mouse)
             probe = recordings_dict["probe"][i]
             loc = recordings_dict["loc"][i]
             dest_path = os.path.join(new_data_root, mouse, probe, loc, experiment_id)

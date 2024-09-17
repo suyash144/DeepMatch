@@ -294,3 +294,10 @@ def read_good_files(experiment_path, batch_size):
         return None
     good_units_files = select_good_units_files(os.path.join(experiment_path, 'processed_waveforms'), good_units_index)
     return good_units_files
+
+def get_exp_id(experiment_path:str, mouse:str):
+    "experiment_path should be a full absolute path to the desired experiment folder"
+    experiment_id = experiment_path[experiment_path.find(mouse):]
+    experiment_id = experiment_id.replace(mouse, '')
+    experiment_id = experiment_id.replace("\\", "_")
+    return experiment_id
