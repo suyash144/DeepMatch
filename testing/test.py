@@ -60,6 +60,7 @@ def test(mouse, probe, loc, model_name, device = "cpu"):
 
         # Initialise the matrix that will store the pairwise probabilities for every combination of neurons
         prob_matrix = np.empty((len(test_dataset), len(test_dataset)))
+        sim_matrix = np.empty((len(test_dataset), len(test_dataset)))
         for i, (estimates_i, candidates_i,_,_,_) in enumerate(test_loader):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
@@ -83,6 +84,7 @@ def test(mouse, probe, loc, model_name, device = "cpu"):
                 # enc_estimates_j = model(estimates_j)
                 enc_candidates_j = model(candidates_j)
                 prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
+                sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
 
             # probs = clip_prob(enc_estimates_i, enc_candidates_i)     # [b, b]    
             # predicted_indices = torch.argmax(probs, dim=1)  # Get the index of the max probability for each batch element
