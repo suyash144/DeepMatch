@@ -52,9 +52,6 @@ def test(mouse, probe, loc, model_name, device = "cpu"):
 
     print(f"Length of test dataset: {len(test_dataset)}")
 
-    losses = metric.AverageMeter()
-    experiment_accuracies = []
-
     with torch.no_grad():
         progress_bar = tqdm.tqdm(total=len(test_loader))
 
@@ -64,38 +61,19 @@ def test(mouse, probe, loc, model_name, device = "cpu"):
         for i, (estimates_i, candidates_i,_,_,_) in enumerate(test_loader):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
-                # candidates_i = candidates_i.cuda()
-            # print(estimates_i.shape)        # [b, t=60, c=30]
-            # print(candidates_i.shape)       # [b, t=60, c=30]
             bsz_i = estimates_i.shape[0]
             # Forward pass
             enc_estimates_i = model(estimates_i) # shape [bsz, channel*time] - actually [b, 256]
-            # enc_candidates_i = model(candidates_i) # shape [bsz, channel*time] - actually [b, 256]
-            # proj_estimates_i = projector(enc_estimates_i)           # [b, 128]
-            # proj_candidates_i = projector(enc_candidates_i)         # [b, 128]
-            # loss_clip = clip_loss(proj_estimates_i, proj_candidates_i)
-            # loss = loss_clip
-            # losses.update(loss.item(), bsz)
+
             for j, (estimates_j, candidates_j,_,_,_) in enumerate(test_loader):
                 if torch.cuda.is_available():
-                    # estimates_j = estimates_j.cuda()
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
-                # enc_estimates_j = model(estimates_j)
                 enc_candidates_j = model(candidates_j)
                 prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
                 sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
-
-            # probs = clip_prob(enc_estimates_i, enc_candidates_i)     # [b, b]    
-            # predicted_indices = torch.argmax(probs, dim=1)  # Get the index of the max probability for each batch element
-            # ground_truth_indices = torch.arange(bsz, device=device)  # Diagonal indices as ground truth
-            # correct_predictions = (predicted_indices == ground_truth_indices).sum().item()  # Count correct predictions
-            # accuracy = correct_predictions / bsz
-            # experiment_accuracies.append(accuracy)
             progress_bar.update(1)
         progress_bar.close()
-    return prob_matrix
-        # print(f"Average loss: {losses.avg}")
-        # print(f"Experiment accuracies: {np.mean(experiment_accuracies)}")
+    return prob_matrix, sim_matrix
 
-probs = test("AL032", "19011111882", "2", "test")
+probs, sims = test("AL032", "19011111882", "2", "test")

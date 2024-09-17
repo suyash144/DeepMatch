@@ -59,20 +59,20 @@ def test_within_day(mouse, probe, loc, model_name, device = "cpu"):
         progress_bar = tqdm.tqdm(total=len(test_loader))
         for estimates, candidates,_,_,_ in test_loader:
             if torch.cuda.is_available():
-                estimates = estimates.cuda()
+                estimates = estimates.cuda()            # both have shape [bsz, 60, 30]
                 candidates = candidates.cuda()
 
             bsz = estimates.shape[0]
             # Forward pass
-            enc_estimates = model(estimates) # shape [bsz, channel*time]
-            enc_candidates = model(candidates) # shape [bsz, channel*time]
-            proj_estimates = projector(enc_estimates)
-            proj_candidates = projector(enc_candidates)
+            enc_estimates = model(estimates) # shape [bsz, 256]
+            enc_candidates = model(candidates) # shape [bsz, 256]
+            proj_estimates = projector(enc_estimates)   # shape [bsz, 128]
+            proj_candidates = projector(enc_candidates)   # shape [bsz, 128]
             loss_clip = clip_loss(proj_estimates, proj_candidates)
             loss = loss_clip
             losses.update(loss.item(), bsz)
 
-            probs = clip_prob(enc_estimates, enc_candidates)
+            probs = clip_prob(enc_estimates, enc_candidates)            # [b, b]
             predicted_indices = torch.argmax(probs, dim=1)  # Get the index of the max probability for each batch element
             ground_truth_indices = torch.arange(bsz, device=device)  # Diagonal indices as ground truth
             correct_predictions = (predicted_indices == ground_truth_indices).sum().item()  # Count correct predictions
