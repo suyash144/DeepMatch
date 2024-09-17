@@ -40,7 +40,10 @@ class NeuropixelsDataset(Dataset):
                 self.experiment_unit_map[exp] = good_units_files
         else:
             raise ValueError("Invalid mode for initialising NeuropixelsDataset")
+
         self.all_files = [(exp, file) for exp, files in self.experiment_unit_map.items() for file in files]
+        if len(self.all_files) < 1:
+            print("No data in test dataset! Try a smaller batch size?")
 
     def __len__(self):
         return len(self.all_files)
