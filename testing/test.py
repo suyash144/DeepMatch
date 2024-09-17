@@ -9,11 +9,11 @@ from utils.npdataset import NeuropixelsDataset, ValidationExperimentBatchSampler
 import numpy as np
 from models.mymodel import *
 from torch.utils.data import DataLoader
+from torch import unsqueeze
 import tqdm
-from utils import metric
 import pandas as pd
 import mat73
-from utils.myutil import get_exp_id
+from utils.myutil import get_exp_id, get_unit_id
 
 
 def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
@@ -72,19 +72,20 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
         try:
             matchtable = pd.read_csv(mt_path)
+            # INSERT NEW COLS
         except:
             print("No matchtable found for this combination of (mouse, probe, location): ")
             print(f"Mouse: {mouse}, Probe: {probe}, Location: {loc}")
             raise ValueError()
         um_path = os.path.join(server_root, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
-        um = f = mat73.loadmat(um_path)
+        um = mat73.loadmat(um_path)
         path_list = um["UMparam"]["KSDir"]
         path_dict = {}
         for i, path in enumerate(path_list):
             p = get_exp_id(path, mouse)
             path_dict[p] = i+1
 
-        for i, (estimates_i, candidates_i,_, exp_ids_i, filepaths_i) in enumerate(test_loader):
+        for i, (estimates_i, _,_, exp_ids_i, filepaths_i) in enumerate(test_loader):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
@@ -94,13 +95,24 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
 
-            for j, (estimates_j, candidates_j,_,exp_ids_j,filepaths_j) in enumerate(test_loader):
+            for j, (_, candidates_j,_,exp_ids_j,filepaths_j) in enumerate(test_loader):
                 if torch.cuda.is_available():
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
                 enc_candidates_j = model(candidates_j)
                 exp_id_j = exp_ids_j[0]
                 recses2 = path_dict[exp_id_j]
+
+                for unit_idx_i, est in enumerate(enc_estimates_i):
+                    id1 = get_unit_id(filepaths_i[unit_idx_i])
+                    est.unsqueeze_(0)
+                    for unit_idx_j, cand in enumerate(enc_candidates_j):
+                        id2 = get_unit_id(filepaths_j[unit_idx_j])
+                        cand.unsqueeze_(0)
+                        prob = clip_prob(est, cand).item()
+                        sim = clip_sim(est, cand).item()
+                        # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
+
 
                 prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
                 sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
