@@ -296,8 +296,21 @@ def read_good_files(experiment_path, batch_size):
     return good_units_files
 
 def get_exp_id(experiment_path:str, mouse:str):
-    "experiment_path should be a full absolute path to the desired experiment folder"
+    """
+    experiment_path should be a full absolute path to the desired experiment folder on the server
+    (NOT LOCAL PATH)
+    """
     experiment_id = experiment_path[experiment_path.find(mouse):]
     experiment_id = experiment_id.replace(mouse, '')
     experiment_id = experiment_id.replace("\\", "_")
     return experiment_id
+
+def get_unit_id(filepath:str):
+    fp = os.path.basename(filepath)
+    if fp[:4] == "Unit" and fp[-14:] == "_RawSpikes.npy":
+        fp = fp.replace("Unit", "")
+        id = fp.replace("_RawSpikes.npy", "")
+        return id
+    else:
+        raise ValueError(f"Invalid filepath format for this waveform: {filepath}", 
+                         "Filename for waveform XX should be UnitXX_RawSpikes.npy")
