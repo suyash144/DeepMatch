@@ -310,7 +310,11 @@ def get_unit_id(filepath:str):
     if fp[:4] == "Unit" and fp[-14:] == "_RawSpikes.npy":
         fp = fp.replace("Unit", "")
         id = fp.replace("_RawSpikes.npy", "")
-        return id
+        try:
+            return int(id)
+        except:
+            raise ValueError(f"Invalid filepath format for this waveform: {filepath}", 
+                         "Filename for waveform XX should be UnitXX_RawSpikes.npy")
     else:
         raise ValueError(f"Invalid filepath format for this waveform: {filepath}", 
                          "Filename for waveform XX should be UnitXX_RawSpikes.npy")
