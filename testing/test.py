@@ -16,7 +16,7 @@ import mat73
 from utils.myutil import get_exp_id, get_unit_id
 
 
-def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
+def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
     """
     Arguments:
     mouse: mouse name
@@ -31,7 +31,6 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
     # Load the trained model
     model = SpatioTemporalCNN_V2(n_channel=30,n_time=60,n_output=256).to(device)
     model = model.double()
-    # model_name = "test"
     ckpt_folder = os.path.join(os.getcwd(), "ModelExp", "experiments", model_name, "ckpt")
     ckpt_lst = os.listdir(ckpt_folder)
     ckpt_lst.sort(key=lambda x: int(x.split('_')[-1]))
@@ -48,7 +47,7 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
     projector = Projector(input_dim=256, output_dim=128, hidden_dim=128, n_hidden_layers=1, dropout=0.1).to(device)
     projector = projector.double()
 
-    test_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UNITMATCH')
+    # test_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UNITMATCH')
     test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
     test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = False)
     test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
@@ -61,18 +60,19 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
         progress_bar = tqdm.tqdm(total=len(test_loader))
 
         # Initialise the matrix that will store the pairwise probabilities for every combination of neurons
-        prob_matrix = np.empty((len(test_dataset), len(test_dataset)))
+        # prob_matrix = np.empty((len(test_dataset), len(test_dataset)))
         # And the similarity matrix
-        sim_matrix = np.empty((len(test_dataset), len(test_dataset)))
+        # sim_matrix = np.empty((len(test_dataset), len(test_dataset)))
         # This matrix will store the experiment id for each entry, corresponding to the 2 above.
-        which_exp = np.empty((len(test_dataset), len(test_dataset)))
+        # which_exp = np.empty((len(test_dataset), len(test_dataset)))
         # And this will store the unit id (within the experiment).
-        unit_id = np.empty((len(test_dataset), len(test_dataset)))
+        # unit_id = np.empty((len(test_dataset), len(test_dataset)))
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
         try:
-            matchtable = pd.read_csv(mt_path)
-            # INSERT NEW COLS
+            mt = pd.read_csv(mt_path)
+            mt.insert(len(mt.columns), "DNNProb", '', allow_duplicates=False)
+            mt.insert(len(mt.columns), "DNNSim", '', allow_duplicates=False)
         except:
             print("No matchtable found for this combination of (mouse, probe, location): ")
             print(f"Mouse: {mouse}, Probe: {probe}, Location: {loc}")
@@ -81,11 +81,11 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
         um = mat73.loadmat(um_path)
         path_list = um["UMparam"]["KSDir"]
         path_dict = {}
-        for i, path in enumerate(path_list):
+        for idx, path in enumerate(path_list):
             p = get_exp_id(path, mouse)
-            path_dict[p] = i+1
+            path_dict[p] = int(idx+1)
 
-        for i, (estimates_i, _,_, exp_ids_i, filepaths_i) in enumerate(test_loader):
+        for estimates_i, _,_, exp_ids_i, filepaths_i in test_loader:
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
@@ -95,7 +95,7 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
 
-            for j, (_, candidates_j,_,exp_ids_j,filepaths_j) in enumerate(test_loader):
+            for _, candidates_j,_,exp_ids_j,filepaths_j in test_loader:
                 if torch.cuda.is_available():
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
@@ -112,15 +112,37 @@ def test(mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
                         prob = clip_prob(est, cand).item()
                         sim = clip_sim(est, cand).item()
                         # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
+                        row = ((mt["ID1"]==id1) & (mt["ID2"]==id2) 
+                                     & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                        mt.loc[row, "DNNProb"] = prob
+                        mt.loc[row, "DNNSim"] = sim
 
-
-                prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
-                sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
+                # prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
+                # sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
             progress_bar.update(1)
+        
+        mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
         progress_bar.close()
-    return prob_matrix, sim_matrix
+
+
 
 if __name__ == '__main__':
-    # example args to check test function works
-    # probs, sims = test("AL032", "19011111882", "2", "test")
-    probs, sims = test("AL031", "19011116684", "1", "test")
+    # example args to check inference function works
+    base = r"C:\Users\suyas\R_DATA_UnitMatch"
+
+    # to test for one specific set of recordings
+    # inference(base, "AL031", "19011116684", "1", "test")
+
+    # to test for all sets of recordings
+    mice = os.listdir(base)
+    for mouse in mice:
+        if mouse=="AV008":
+            continue
+        name_path = os.path.join(base, mouse)
+        probes = os.listdir(name_path)
+        for probe in probes:
+            name_probe = os.path.join(name_path, probe)
+            locations = os.listdir(name_probe)
+            for location in locations:
+                name_probe_location = os.path.join(name_probe, location)
+                inference(base, mouse, probe, location, "test")
