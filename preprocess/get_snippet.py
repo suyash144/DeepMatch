@@ -86,11 +86,11 @@ if __name__ == "__main__":
                     MaxSitepos = np.array([-1,-1])
                 else:
                     # print('np_file_name', np_file_name)
-                    # try:
-                    MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
-                    # except:
-                    #     print(f"Failed to extract waveforms for {np_waveform_file}")
-                    #     pass
+                    try:
+                        MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
+                    except:
+                        print(f"Failed to extract waveforms for {np_waveform_file}")
+                        continue
 
                 save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos)
         print(f"Finished processing data for mouse {mouse}")

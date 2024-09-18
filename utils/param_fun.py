@@ -118,9 +118,9 @@ def extract_Rwaveforms(waveform, ChannelPos,ChannelMap, param):
     goodpos = ChannelPos * np.tile(goodidx, (2,1)).T
     goodpos = goodpos[goodidx,:]
     sorted_goodChannelMap,sorted_goodpos = sort_good_channels(goodChannelMap, goodpos)
-    if sorted_goodChannelMap[0]==-1 and sorted_goodpos[0]==-1:
-        # we have a spike sorting error so need to 0 this recording
-        return np.array([-1,-1]), np.array([-1,-1]), [0], [0], np.zeros((1,1,1))
+    # if sorted_goodChannelMap[0]==-1 and sorted_goodpos[0]==-1:
+    #     # we have a spike sorting error so need to 0 this recording
+    #     return np.array([-1,-1]), np.array([-1,-1]), [0], [0], np.zeros((1,1,1))
     Rwaveform = waveform[:, sorted_goodChannelMap, :] #selecting the good channels
     
     ## this part is tricks to make the data proper for DNN training
