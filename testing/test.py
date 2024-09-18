@@ -14,6 +14,8 @@ import tqdm
 import pandas as pd
 import mat73
 from utils.myutil import get_exp_id, get_unit_id
+from scipy.special import softmax
+from collections import namedtuple
 
 
 def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
@@ -60,6 +62,9 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
         progress_bar = tqdm.tqdm(total=len(test_loader))
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
+
+        # if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+        #     return
         try:
             mt = pd.read_csv(mt_path)
             mt.insert(len(mt.columns), "DNNProb", '', allow_duplicates=False)
@@ -97,17 +102,21 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
                 for unit_idx_i, est in enumerate(enc_estimates_i):
                     id1 = get_unit_id(filepaths_i[unit_idx_i])
                     est.unsqueeze_(0)
+                    sims = {}
                     for unit_idx_j, cand in enumerate(enc_candidates_j):
                         id2 = get_unit_id(filepaths_j[unit_idx_j])
                         cand.unsqueeze_(0)
-                        prob = clip_prob(est, cand).item()
+                        # prob = clip_prob(est, cand).item()
                         sim = clip_sim(est, cand).item()
                         # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
                         row = ((mt["ID1"]==id1) & (mt["ID2"]==id2) 
-                                     & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
-                        mt.loc[row, "DNNProb"] = prob
-                        mt.loc[row, "DNNSim"] = sim
-
+                                & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                        row_idx = np.argwhere(row).item()
+                        sims[row_idx] = float(sim)
+                        mt.loc[row_idx, "DNNSim"] = sim
+                    probs = softmax(np.array(list(sims.values())))
+                    for i ,row in enumerate(sims):
+                        mt.loc[row, "DNNProb"] = probs[i]
             progress_bar.update(1)
         
         mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
