@@ -58,15 +58,6 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
 
     with torch.no_grad():
         progress_bar = tqdm.tqdm(total=len(test_loader))
-
-        # Initialise the matrix that will store the pairwise probabilities for every combination of neurons
-        # prob_matrix = np.empty((len(test_dataset), len(test_dataset)))
-        # And the similarity matrix
-        # sim_matrix = np.empty((len(test_dataset), len(test_dataset)))
-        # This matrix will store the experiment id for each entry, corresponding to the 2 above.
-        # which_exp = np.empty((len(test_dataset), len(test_dataset)))
-        # And this will store the unit id (within the experiment).
-        # unit_id = np.empty((len(test_dataset), len(test_dataset)))
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
         try:
@@ -117,8 +108,6 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
                         mt.loc[row, "DNNProb"] = prob
                         mt.loc[row, "DNNSim"] = sim
 
-                # prob_matrix[i:i+bsz_i, j:j+bsz_j] = clip_prob(enc_estimates_i, enc_candidates_j)
-                # sim_matrix[i:i+bsz_i, j:j+bsz_j] = clip_sim(enc_estimates_i, enc_candidates_j)
             progress_bar.update(1)
         
         mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
