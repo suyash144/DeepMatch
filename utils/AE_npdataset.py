@@ -52,7 +52,9 @@ class AE_NeuropixelsDataset(Dataset):
                 data = waveform[..., 1]  # Second half
             except:
                 data = waveform[..., 0]  # First half
-
+        # Handle data being the wrong shape
+        if data.shape != (60,30):
+            data = np.zeros((60,30))
         return data
 
 

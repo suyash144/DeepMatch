@@ -10,7 +10,7 @@ import numpy as np
 from models.mymodel import *
 from torch.utils.data import DataLoader
 from torch import unsqueeze
-import tqdm
+from tqdm import tqdm
 import pandas as pd
 import mat73
 from utils.myutil import get_exp_id, get_unit_id
@@ -44,7 +44,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
     server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
 
     with torch.no_grad():
-        progress_bar = tqdm.tqdm(total=len(test_loader))
+        progress_bar = tqdm(total=len(test_loader))
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
@@ -67,7 +67,8 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
             p = get_exp_id(path, mouse)
             path_dict[p] = int(idx+1)
 
-        for estimates_i, _,_, exp_ids_i, filepaths_i in test_loader:
+        print("Loaded um and mt. path_dict created")
+        for estimates_i, _,_, exp_ids_i, filepaths_i in tqdm(test_loader):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
@@ -77,7 +78,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
 
-            for _, candidates_j,_,exp_ids_j,filepaths_j in test_loader:
+            for _, candidates_j,_,exp_ids_j,filepaths_j in tqdm(test_loader):
                 if torch.cuda.is_available():
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
@@ -85,11 +86,11 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
                 exp_id_j = exp_ids_j[0]
                 recses2 = path_dict[exp_id_j]
 
-                for unit_idx_i, est in enumerate(enc_estimates_i):
+                for unit_idx_i, est in tqdm(enumerate(enc_estimates_i)):
                     id1 = get_unit_id(filepaths_i[unit_idx_i])
                     est.unsqueeze_(0)
                     sims = {}
-                    for unit_idx_j, cand in enumerate(enc_candidates_j):
+                    for unit_idx_j, cand in tqdm(enumerate(enc_candidates_j)):
                         id2 = get_unit_id(filepaths_j[unit_idx_j])
                         cand.unsqueeze_(0)
                         # prob = clip_prob(est, cand).item()
