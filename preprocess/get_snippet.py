@@ -82,6 +82,8 @@ if __name__ == "__main__":
                     # data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
                     # print(f"Bad data for mouse {mouse}, just fill with zeros and -1")
                     # print(np_waveform_file)
+                    print(f"Corrupted data in {np_waveform_file}")
+                    continue
                     Rwaveform = np.zeros((1,1,1))
                     MaxSitepos = np.array([-1,-1])
                 else:
@@ -93,5 +95,5 @@ if __name__ == "__main__":
                         continue
 
                 save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos)
-        print(f"Finished processing data for mouse {mouse}")
+        print(f"Finished processing data for experiment {experiment_id}")
     

@@ -48,7 +48,10 @@ class AE_NeuropixelsDataset(Dataset):
         if half == 0:
             data = waveform[..., 0]  # First half
         else:
-            data = waveform[..., 1]  # Second half
+            try:
+                data = waveform[..., 1]  # Second half
+            except:
+                data = waveform[..., 0]  # First half
 
         return data
 
