@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import mat73
 
 def create_sim_mat(df):
     sessions = df["RecSes1"].iloc[1] == df["RecSes2"].iloc[1]
@@ -30,9 +32,15 @@ def create_concat_mat(df11, df12, df21, df22):
     return sim_matrix
 
 def read_depths(mouse, probe, loc):
-
-
-    pass
+    base = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
+    # Find Unitmatch.mat for each recording
+    um_path = os.path.join(base, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
+    um = mat73.loadmat(um_path)
+    pl = um["WaveformInfo"]["ProjectedLocation"]
+    pl = pl[1,:,:]
+    pl = np.mean(pl, axis=1)
+    # pl has length N_clus and is ordered by clusID
+    return pl
 
 def compare_two_recordings(df, rec1:int, rec2:int):
     """
@@ -66,3 +74,4 @@ def compare_two_recordings(df, rec1:int, rec2:int):
 df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL031\19011116684\1\new_matchtable.csv")
 
 
+proj_loc = read_depths("AL031", "19011116684", "1")
