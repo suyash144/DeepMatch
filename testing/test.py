@@ -17,19 +17,7 @@ from utils.myutil import get_exp_id, get_unit_id
 from scipy.special import softmax
 from collections import namedtuple
 
-
-def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
-    """
-    Arguments:
-    mouse: mouse name
-    probe: probe
-    loc: location on probe
-    These 3 arguments together should also specify the filepath to the folder of experiments
-    for this specific combination of (mouse, probe, loc)
-    model_name: name of saved (trained) model you wish to load for testing (within ModelExp/experiments)
-    device: optional, specify if e.g. using cuda
-    """
-
+def load_trained_model(model_name:str, device):
     # Load the trained model
     model = SpatioTemporalCNN_V2(n_channel=30,n_time=60,n_output=256).to(device)
     model = model.double()
@@ -49,13 +37,10 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
     projector = Projector(input_dim=256, output_dim=128, hidden_dim=128, n_hidden_layers=1, dropout=0.1).to(device)
     projector = projector.double()
 
-    # test_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UNITMATCH')
-    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
-    test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = False)
-    test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
+    # Can also return projector if needed
+    return model
 
-    print(f"Length of test dataset: {len(test_dataset)}")
-
+def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
     server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
 
     with torch.no_grad():
@@ -64,6 +49,7 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
         # if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+        #     print("New matchtable already exists - continuing would overwrite.")
         #     return
         try:
             mt = pd.read_csv(mt_path)
@@ -122,25 +108,79 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
         mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
         progress_bar.close()
 
+def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
+    """
+    Arguments:
+    mouse: mouse name
+    probe: probe
+    loc: location on probe
+    These 3 arguments together should also specify the filepath to the folder of experiments
+    for this specific combination of (mouse, probe, loc)
+    model_name: name of saved (trained) model you wish to load for testing (within ModelExp/experiments)
+    device: optional, specify if e.g. using cuda
+    """
 
+    model = load_trained_model(model_name, device)
+
+    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
+    test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = False)
+    test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
+
+    print(f"Length of test dataset: {len(test_dataset)}")
+
+    write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc)
+
+def inference_one_pair(rec1:str, rec2:str, model_name:str, device="cpu"):
+    """
+    rec1 and rec2 should be full absolute paths to the recordings we want to compare
+    """
+
+    loc = os.path.basename(os.path.dirname(rec1))
+    probe = os.path.basename(os.path.dirname(os.path.dirname(rec1)))
+    mouse = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(rec1))))
+    test_data_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(rec1))))
+
+    model = load_trained_model(model_name=model_name, device=device)
+    
+    # test dataset contains all recordings under this 
+    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
+    # so now drop all the ones we don't want to compare
+    new_dict = {}
+    for key in test_dataset.experiment_unit_map:
+        if key == os.path.basename(rec1) or key == os.path.basename(rec2):
+            new_dict[key] = test_dataset.experiment_unit_map[key]
+    test_dataset.experiment_unit_map = new_dict
+    test_dataset.all_files = [(exp, file) for exp, files in test_dataset.experiment_unit_map.items() for file in files]
+
+    test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = False)
+    test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
+    print(f"Length of test dataset: {len(test_dataset)}")
+
+    write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc)
+    
 
 if __name__ == '__main__':
     # example args to check inference function works
     base = r"C:\Users\suyas\R_DATA_UnitMatch"
 
-    # to test for one specific set of recordings
+    # to test on one specific set of recordings (ie one group with same (mouse, probe, loc))
     # inference(base, "AL031", "19011116684", "1", "test")
 
-    # to test for all sets of recordings
-    mice = os.listdir(base)
-    for mouse in mice:
-        if mouse=="AV008":
-            continue
-        name_path = os.path.join(base, mouse)
-        probes = os.listdir(name_path)
-        for probe in probes:
-            name_probe = os.path.join(name_path, probe)
-            locations = os.listdir(name_probe)
-            for location in locations:
-                name_probe_location = os.path.join(name_probe, location)
-                inference(base, mouse, probe, location, "test")
+    # to test on all sets of recordings
+    # mice = os.listdir(base)
+    # for mouse in mice:
+    #     if mouse=="AV008":
+    #         continue
+    #     name_path = os.path.join(base, mouse)
+    #     probes = os.listdir(name_path)
+    #     for probe in probes:
+    #         name_probe = os.path.join(name_path, probe)
+    #         locations = os.listdir(name_probe)
+    #         for location in locations:
+    #             name_probe_location = os.path.join(name_probe, location)
+    #             inference(base, mouse, probe, location, "test")
+
+    # to test on one specific pair of recordings
+    inference_one_pair(rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output", 
+                       rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output", 
+                       model_name = "test")
