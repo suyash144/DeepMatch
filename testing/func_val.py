@@ -29,17 +29,26 @@ def create_concat_mat(df11, df12, df21, df22):
     sim_matrix = np.concatenate((top_row, bottom_row))
     return sim_matrix
 
-df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL031\19011116684\1\new_matchtable.csv")
+def read_depths(mouse, probe, loc):
 
-# To compare two recordings on adjacent days
-rows = ((df["RecSes1"] == 3) | (df["RecSes1"] == 4)) & ((df["RecSes2"] == 3) | (df["RecSes2"] == 4))
 
-df = df.loc[rows, :]
+    pass
 
-df11 = df.loc[(df["RecSes1"] == 3) & (df["RecSes2"] == 3), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-df12 = df.loc[(df["RecSes1"] == 3) & (df["RecSes2"] == 4), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-df21 = df.loc[(df["RecSes1"] == 4) & (df["RecSes2"] == 3), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-df22 = df.loc[(df["RecSes1"] == 4) & (df["RecSes2"] == 4), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+def compare_two_recordings(df, rec1:int, rec2:int):
+    """
+    df: dataframe object from pandas.read_csv
+    rec1: integer corresponding to the RecSes1 that you want to select
+    rec2: integer corresponding to the RecSes2 that you want to select
+    """
+
+    df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+    df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+    df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+    df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+    sim_matrix = create_concat_mat(df11, df12, df21, df22)
+    plt.matshow(sim_matrix)
+    plt.show()
+
 
 # sims = df["DNNSim"]
 # probs = df["DNNProb"]
@@ -53,8 +62,7 @@ df22 = df.loc[(df["RecSes1"] == 4) & (df["RecSes2"] == 4), ["RecSes1", "RecSes2"
 # # plt.show()
 # print(max(probs))
 
-sim_matrix = create_concat_mat(df11, df12, df21, df22)
+
+df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL031\19011116684\1\new_matchtable.csv")
 
 
-plt.matshow(sim_matrix)
-plt.show()
