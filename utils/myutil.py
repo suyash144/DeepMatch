@@ -252,9 +252,9 @@ def read_good_ids(root, batch_size, finetune:bool):
     experiment_unit_map = {}
 
     for name in mouse_names:
-        if name=="AV008":
-            # skipping AV008 for now due to spike sorting issue
-            continue
+        # if name=="AV008":
+        #     # skipping AV008 for now due to spike sorting issue
+        #     continue
         name_path = os.path.join(root, name)
         probes = os.listdir(name_path)                        
         for probe in probes:
