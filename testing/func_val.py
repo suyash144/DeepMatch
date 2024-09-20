@@ -40,19 +40,29 @@ def read_depths(mouse, probe, loc):
     pl = pl[1,:,:]
     pl = np.mean(pl, axis=1)
     # pl has length N_clus and is ordered by clusID
-    return pl
+    # Equivalently, ordered by RecSes1 -> ID1 -> RecSes2 -> ID2
+    pl = np.array(pl)
+    return pl.argsort()
 
-def compare_two_recordings(df, rec1:int, rec2:int):
+def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth"):
     """
     df: dataframe object from pandas.read_csv
     rec1: integer corresponding to the RecSes1 that you want to select
     rec2: integer corresponding to the RecSes2 that you want to select
+    sort_method: how you want the results to be sorted (depth or id)
     """
-
-    df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-    df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-    df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
-    df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=['ID1', 'ID2'])
+    if sort_method == "depth":
+        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+    elif sort_method == "id":
+        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+    else:
+        raise ValueError("Please pick a sorting method from 'depth' or 'id'. Default is depth.")
     sim_matrix = create_concat_mat(df11, df12, df21, df22)
     plt.matshow(sim_matrix)
     plt.show()
@@ -71,7 +81,9 @@ def compare_two_recordings(df, rec1:int, rec2:int):
 # print(max(probs))
 
 
-df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL031\19011116684\1\new_matchtable.csv")
+# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
 
 
-proj_loc = read_depths("AL031", "19011116684", "1")
+proj_loc = read_depths("AL032", "19011111882", "2")
+
+# compare_two_recordings(df, 4, 5)
