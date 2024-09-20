@@ -36,31 +36,37 @@ def read_depths(mouse, probe, loc):
     # Find Unitmatch.mat for each recording
     um_path = os.path.join(base, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
     um = mat73.loadmat(um_path)
-    pl = um["WaveformInfo"]["ProjectedLocation"]
-    pl = pl[1,:,:]
+    pl = um["WaveformInfo"]["ProjectedLocation"]        # shape [3 x Nclus x 2]
+    pl = pl[1,:,:]                                      # shape [Nclus x 2]
     pl = np.mean(pl, axis=1)
     # pl has length N_clus and is ordered by clusID
     # Equivalently, ordered by RecSes1 -> ID1 -> RecSes2 -> ID2
     pl = np.array(pl)
-    return pl.argsort()
+    pl = np.repeat(pl, len(pl))
+    return pl
 
-def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth"):
+def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth", depths = None):
     """
     df: dataframe object from pandas.read_csv
     rec1: integer corresponding to the RecSes1 that you want to select
     rec2: integer corresponding to the RecSes2 that you want to select
     sort_method: how you want the results to be sorted (depth or id)
+    depths: only required if sort_method="depth". can read depths directly from matlab using the
+    read_depths function.
     """
+    # Pick out the relevant columns and ensure they are sorted
+    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
     if sort_method == "depth":
-        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df.insert(len(df.columns), "depth", depths)
+        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
     elif sort_method == "id":
-        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
+        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
+        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :]
+        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
     else:
         raise ValueError("Please pick a sorting method from 'depth' or 'id'. Default is depth.")
     sim_matrix = create_concat_mat(df11, df12, df21, df22)
@@ -81,9 +87,10 @@ def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth"):
 # print(max(probs))
 
 
-# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
+df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable_no_AV008.csv")
 
 
 proj_loc = read_depths("AL032", "19011111882", "2")
-
-# compare_two_recordings(df, 4, 5)
+# print(proj_loc)
+# print(len(proj_loc))
+compare_two_recordings(df, 4, 5, "id", proj_loc)
