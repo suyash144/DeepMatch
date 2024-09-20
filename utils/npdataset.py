@@ -89,6 +89,8 @@ class NeuropixelsDataset(Dataset):
         with h5py.File(neuron_file, 'r') as f:
             waveform = f['waveform'][()] 
             MaxSitepos = f['MaxSitepos'][()]
+        if waveform.shape != (60,30,2):
+            waveform = np.zeros((60,30,2))
         # waveform [T,C,2]
         # waveform_fh = self._normalize_waveform(waveform[..., 0])
         # waveform_sh = self._normalize_waveform(waveform[..., 1])

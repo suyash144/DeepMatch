@@ -110,7 +110,7 @@ def run(args):
     np_dataset = NeuropixelsDataset(root=train_data_root,batch_size=args.batchsize, mode='train')
     train_sampler = TrainExperimentBatchSampler(np_dataset, args.batchsize, shuffle=True)
     train_loader = DataLoader(np_dataset, batch_sampler=train_sampler)
-    val_np_dataset = NeuropixelsDataset(root=train_data_root, batch_size=args.batchsize, mode='val')
+    val_np_dataset = NeuropixelsDataset(root=train_data_root, batch_size=args.batchsize, mode='train')
     val_sampler = ValidationExperimentBatchSampler(val_np_dataset, shuffle = True)
     val_loader = DataLoader(val_np_dataset, batch_sampler=val_sampler)
 
