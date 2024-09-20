@@ -48,9 +48,9 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
-        # if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
-        #     print("New matchtable already exists - continuing would overwrite.")
-        #     return
+        if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+            print("New matchtable already exists - continuing would overwrite.")
+            return
         try:
             mt = pd.read_csv(mt_path)
             mt.insert(len(mt.columns), "DNNProb", '', allow_duplicates=False)
@@ -184,4 +184,4 @@ if __name__ == '__main__':
     # to test on one specific pair of recordings
     inference_one_pair(rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output", 
                        rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output", 
-                       model_name = "test")
+                       model_name = "incl_AV008")
