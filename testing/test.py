@@ -74,7 +74,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
             path_dict[p] = int(idx+1)
 
         print("Loaded um and mt. path_dict created")
-        for i, (estimates_i, _,_, exp_ids_i, filepaths_i) in tqdm(enumerate(test_loader)):
+        for estimates_i, _,_, exp_ids_i, filepaths_i in tqdm(test_loader):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
@@ -84,7 +84,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
 
-            for j, (_, candidates_j,_,exp_ids_j,filepaths_j) in tqdm(enumerate(test_loader)):
+            for _, candidates_j,_,exp_ids_j,filepaths_j in tqdm(test_loader):
                 if torch.cuda.is_available():
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
@@ -93,12 +93,11 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
                 recses2 = path_dict[exp_id_j]
 
                 if fast:
-                    s = clip_sim(enc_estimates_i, enc_candidates_j).flatten()
-                    p = clip_prob(enc_estimates_i, enc_candidates_j).flatten()
+                    s = clip_sim(enc_estimates_i, enc_candidates_j)
 
                     rows = ((mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
-                    mt.loc[rows, "DNNSim"] = s
-                    mt.loc[rows, "DNNProb"] = p
+                    mt.loc[rows, "DNNSim"] = s.flatten()
+                    mt.loc[rows, "DNNProb"] = F.softmax(s, dim=1).flatten()
                     
                 else:
                     # do things the slow way 

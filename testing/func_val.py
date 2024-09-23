@@ -93,4 +93,4 @@ df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_match
 proj_loc = read_depths("AL032", "19011111882", "2")
 # print(proj_loc)
 # print(len(proj_loc))
-compare_two_recordings(df, 4, 5, "depth", proj_loc)
+compare_two_recordings(df, 4, 5, "id", proj_loc)
