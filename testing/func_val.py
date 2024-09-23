@@ -4,7 +4,7 @@ import numpy as np
 import os
 import mat73
 
-def create_sim_mat(df):
+def create_sim_mat(df, col):
     sessions = df["RecSes1"].iloc[1] == df["RecSes2"].iloc[1]
     if sessions:
         l1 = l2 = int(np.sqrt(len(df)))
@@ -15,15 +15,15 @@ def create_sim_mat(df):
     mat = np.empty((l1, l2))
     for n in range(len(df)):
         neuron = df.iloc[n, :]
-        s = neuron["DNNSim"]
+        s = neuron[col]
         mat[n//l2, n % l2] = s
     return mat
 
-def create_concat_mat(df11, df12, df21, df22):
-    s11 = create_sim_mat(df11)
-    s12 = create_sim_mat(df12)
-    s21 = create_sim_mat(df21)
-    s22 = create_sim_mat(df22)
+def create_concat_mat(df11, df12, df21, df22, col):
+    s11 = create_sim_mat(df11, col)
+    s12 = create_sim_mat(df12, col)
+    s21 = create_sim_mat(df21, col)
+    s22 = create_sim_mat(df22, col)
         
     top_row = np.concatenate((s11, s12), axis = 1)
     bottom_row =  np.concatenate((s21, s22), axis = 1)
@@ -45,9 +45,9 @@ def read_depths(mouse, probe, loc):
     pl = np.repeat(pl, len(pl))
     return pl
 
-def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "depth", depths = None):
+def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "id", depths = None):
     """
-    df: dataframe object containing whole matchtable csv
+    path_to_csv: path to matchtable csv
     rec1: integer corresponding to the RecSes1 that you want to select
     rec2: integer corresponding to the RecSes2 that you want to select
     sort_method: how you want the results to be sorted (depth or id)
@@ -55,7 +55,8 @@ def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "d
     read_depths function.
     """
     # Pick out the relevant columns and ensure they are sorted
-    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'RecSes2', 'ID1', 'ID2'])
+    df = pd.read_csv(path_to_csv)
+    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]].sort_values(by=["RecSes1", 'RecSes2', 'ID1', 'ID2'])
     if sort_method == "depth":
         df.insert(len(df.columns), "depth", depths)
         df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
@@ -69,8 +70,15 @@ def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "d
         df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
     else:
         raise ValueError("Please pick a sorting method from 'depth' or 'id'. Default is depth.")
-    sim_matrix = create_concat_mat(df11, df12, df21, df22)
-    plt.matshow(sim_matrix)
+    sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim")
+    fig, (ax1, ax2) = plt.subplots(ncols = 2)
+    ax1.matshow(sim_matrix)
+    ax1.set_title("DNN Similarity matrix")
+
+    um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb")
+    ax2.matshow(um_output)
+    ax2.set_title("UnitMatch match probabilities")
+
     plt.show()
 
 
@@ -88,9 +96,9 @@ def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "d
 
 
 # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
-df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv")
+path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
 # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
 
 # proj_loc = read_depths("AL036", "19011116882", "3")
 
-compare_two_recordings(df, 19, 20, "id")
+compare_two_recordings(path_to_csv, 19, 20)
