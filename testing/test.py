@@ -40,7 +40,13 @@ def load_trained_model(model_name:str, device):
     # Can also return projector if needed
     return model
 
-def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
+def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, fast=True):
+    """
+    fast mode assumes that the matchtable and data are sorted consistently so that elements in similarity
+    and probability matrices map to rows in match table trivially.
+    slow mode does not but takes much longer.
+    """
+
     server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
 
     with torch.no_grad():
@@ -68,7 +74,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
             path_dict[p] = int(idx+1)
 
         print("Loaded um and mt. path_dict created")
-        for estimates_i, _,_, exp_ids_i, filepaths_i in tqdm(test_loader):
+        for i, (estimates_i, _,_, exp_ids_i, filepaths_i) in tqdm(enumerate(test_loader)):
             if torch.cuda.is_available():
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
@@ -78,7 +84,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
 
-            for _, candidates_j,_,exp_ids_j,filepaths_j in tqdm(test_loader):
+            for j, (_, candidates_j,_,exp_ids_j,filepaths_j) in tqdm(enumerate(test_loader)):
                 if torch.cuda.is_available():
                     candidates_j = candidates_j.cuda()
                 bsz_j = candidates_j.shape[0]
@@ -86,24 +92,34 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc):
                 exp_id_j = exp_ids_j[0]
                 recses2 = path_dict[exp_id_j]
 
-                for unit_idx_i, est in tqdm(enumerate(enc_estimates_i)):
-                    id1 = get_unit_id(filepaths_i[unit_idx_i])
-                    est.unsqueeze_(0)
-                    sims = {}
-                    for unit_idx_j, cand in tqdm(enumerate(enc_candidates_j)):
-                        id2 = get_unit_id(filepaths_j[unit_idx_j])
-                        cand.unsqueeze_(0)
-                        # prob = clip_prob(est, cand).item()
-                        sim = clip_sim(est, cand).item()
-                        # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
-                        row = ((mt["ID1"]==id1) & (mt["ID2"]==id2) 
-                                & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
-                        row_idx = np.argwhere(row).item()
-                        sims[row_idx] = float(sim)
-                        mt.loc[row_idx, "DNNSim"] = sim
-                    probs = softmax(np.array(list(sims.values())))
-                    for i ,row in enumerate(sims):
-                        mt.loc[row, "DNNProb"] = probs[i]
+                if fast:
+                    s = clip_sim(enc_estimates_i, enc_candidates_j).flatten()
+                    p = clip_prob(enc_estimates_i, enc_candidates_j).flatten()
+
+                    rows = ((mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                    mt.loc[rows, "DNNSim"] = s
+                    mt.loc[rows, "DNNProb"] = p
+                    
+                else:
+                    # do things the slow way 
+                    for unit_idx_i, est in tqdm(enumerate(enc_estimates_i)):
+                        id1 = get_unit_id(filepaths_i[unit_idx_i])
+                        est.unsqueeze_(0)
+                        sims = {}
+                        for unit_idx_j, cand in tqdm(enumerate(enc_candidates_j)):
+                            id2 = get_unit_id(filepaths_j[unit_idx_j])
+                            cand.unsqueeze_(0)
+                            # prob = clip_prob(est, cand).item()
+                            sim = clip_sim(est, cand).item()
+                            # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
+                            row = ((mt["ID1"]==id1) & (mt["ID2"]==id2) 
+                                    & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                            row_idx = np.argwhere(row).item()
+                            sims[row_idx] = float(sim)
+                            mt.loc[row_idx, "DNNSim"] = sim
+                        probs = softmax(np.array(list(sims.values())))
+                        for i ,row in enumerate(sims):
+                            mt.loc[row, "DNNProb"] = probs[i]
             progress_bar.update(1)
         
         mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
@@ -164,10 +180,15 @@ if __name__ == '__main__':
     # example args to check inference function works
     base = r"C:\Users\suyas\R_DATA_UnitMatch"
 
-    # to test on one specific set of recordings (ie one group with same (mouse, probe, loc))
+    # to test on one specific PAIR of recordings
+    inference_one_pair(rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output", 
+                       rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output", 
+                       model_name = "incl_AV008")
+
+    # to test on one specific SET of recordings (ie one group with same (mouse, probe, loc))
     # inference(base, "AL031", "19011116684", "1", "test")
 
-    # to test on all sets of recordings
+    # to test on ALL sets of recordings
     # mice = os.listdir(base)
     # for mouse in mice:
     #     if mouse=="AV008":
@@ -180,8 +201,3 @@ if __name__ == '__main__':
     #         for location in locations:
     #             name_probe_location = os.path.join(name_probe, location)
     #             inference(base, mouse, probe, location, "test")
-
-    # to test on one specific pair of recordings
-    inference_one_pair(rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output", 
-                       rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output", 
-                       model_name = "incl_AV008")
