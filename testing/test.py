@@ -186,6 +186,11 @@ if __name__ == '__main__':
     # AL036 recordings
     rec1 = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\_2020-07-01_ephys__2020-07-01_stripe240_natIm_g0__2020-07-01_stripe240_natIm_g0_imec0_PyKS_output"
     rec2 = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output"
+    
+    # AV008 recordings
+    # rec1 = r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\_2022-03-21_ephys__2022-03-21_SparseNoiseNaturalImages_g0__2022-03-21_SparseNoiseNaturalImages_g0_imec0_pyKS_output"
+    # rec2 = r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\_2022-03-22_ephys__2022-03-22_SparseNoiseNaturalImages_g0__2022-03-22_SparseNoiseNaturalImages_g0_imec0_pyKS_output"
+    
     # to test on one specific PAIR of recordings
     inference_one_pair(rec1, rec2, model_name = "incl_AV008")
 

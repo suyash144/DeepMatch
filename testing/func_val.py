@@ -89,6 +89,7 @@ def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "d
 
 # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
 df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv")
+# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
 
 # proj_loc = read_depths("AL036", "19011116882", "3")
 
