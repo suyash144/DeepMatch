@@ -55,13 +55,13 @@ def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth", depths
     read_depths function.
     """
     # Pick out the relevant columns and ensure they are sorted
-    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'ID1', "RecSes2", 'ID2'])
+    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim"]].sort_values(by=["RecSes1", 'RecSes2', 'ID1', 'ID2'])
     if sort_method == "depth":
         df.insert(len(df.columns), "depth", depths)
-        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
-        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'ID1', "RecSes2", 'ID2'])
+        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
+        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
+        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
+        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
     elif sort_method == "id":
         df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
         df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
@@ -87,10 +87,10 @@ def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth", depths
 # print(max(probs))
 
 
-df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable_no_AV008.csv")
+df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
 
 
 proj_loc = read_depths("AL032", "19011111882", "2")
 # print(proj_loc)
 # print(len(proj_loc))
-compare_two_recordings(df, 4, 5, "id", proj_loc)
+compare_two_recordings(df, 4, 5, "depth", proj_loc)
