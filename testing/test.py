@@ -159,7 +159,7 @@ def inference_one_pair(rec1:str, rec2:str, model_name:str, device="cpu"):
     model = load_trained_model(model_name=model_name, device=device)
     
     # test dataset contains all recordings under this 
-    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
+    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=1, mode='val', m=mouse, p=probe, l=loc)
     # so now drop all the ones we don't want to compare
     new_dict = {}
     for key in test_dataset.experiment_unit_map:
@@ -179,10 +179,15 @@ if __name__ == '__main__':
     # example args to check inference function works
     base = r"C:\Users\suyas\R_DATA_UnitMatch"
 
+    # AL032 recordings
+    # rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output"
+    # rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output"
+
+    # AL036 recordings
+    rec1 = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\_2020-07-01_ephys__2020-07-01_stripe240_natIm_g0__2020-07-01_stripe240_natIm_g0_imec0_PyKS_output"
+    rec2 = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output"
     # to test on one specific PAIR of recordings
-    inference_one_pair(rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output", 
-                       rec2=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-22_ephys_K1_PyKS_output", 
-                       model_name = "incl_AV008")
+    inference_one_pair(rec1, rec2, model_name = "incl_AV008")
 
     # to test on one specific SET of recordings (ie one group with same (mouse, probe, loc))
     # inference(base, "AL031", "19011116684", "1", "test")

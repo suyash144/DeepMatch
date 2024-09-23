@@ -45,9 +45,9 @@ def read_depths(mouse, probe, loc):
     pl = np.repeat(pl, len(pl))
     return pl
 
-def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth", depths = None):
+def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "depth", depths = None):
     """
-    df: dataframe object from pandas.read_csv
+    df: dataframe object containing whole matchtable csv
     rec1: integer corresponding to the RecSes1 that you want to select
     rec2: integer corresponding to the RecSes2 that you want to select
     sort_method: how you want the results to be sorted (depth or id)
@@ -87,10 +87,9 @@ def compare_two_recordings(df, rec1:int, rec2:int, sort_method = "depth", depths
 # print(max(probs))
 
 
-df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
+# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
+df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv")
 
+# proj_loc = read_depths("AL036", "19011116882", "3")
 
-proj_loc = read_depths("AL032", "19011111882", "2")
-# print(proj_loc)
-# print(len(proj_loc))
-compare_two_recordings(df, 4, 5, "id", proj_loc)
+compare_two_recordings(df, 19, 20, "id")
