@@ -17,8 +17,13 @@ def compare_isi(test_data_root, mouse, probe, loc):
         raise ValueError("Length of matchtable is not (no. of neurons)^2")
     sorted = mt.sort_values(by = "DNNSim", ascending=False).head(matches)
     sorted = sorted.loc[:, ["DNNSim", "ISICorr"]]
-    plt.hist(sorted["ISICorr"], bins = 100)
+    unsorted = mt.head(matches)
+    plt.hist(sorted["ISICorr"], bins = 500, label="Matches (as per DNNSim)")
+    plt.hist(unsorted["ISICorr"], bins = 500, label="Random selection")
+    plt.legend()
     plt.show()
 
 
-compare_isi(test_data_root, "AL031", "19011116684", "1")
+# compare_isi(test_data_root, "AL031", "19011116684", "1")
+# compare_isi(test_data_root, "AL032", "19011111882", "2")
+compare_isi(test_data_root, "AL036", "19011116882", "3")
