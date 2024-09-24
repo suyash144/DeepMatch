@@ -14,7 +14,7 @@ def compare_isi(test_data_root, mouse, probe, loc):
         percentile = 1 - matches/len(mt)
     else:
         raise ValueError("Length of matchtable is not (no. of neurons)^2")
-    thresh = mt.quantile(percentile, )
+    thresh = mt["DNNSim"].quantile(percentile, numeric_only=True)
     mt = mt.loc[mt["DNNSim" > thresh], ["ISICorr", "DNNSim", "DNNProb"]]
 
 
