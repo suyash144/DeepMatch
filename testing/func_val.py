@@ -26,6 +26,7 @@ def create_sim_mat(df, col):
     mat = np.empty((l1, l2))
     df["ID1"] = rank_list(df["ID1"])
     df["ID2"] = rank_list(df["ID2"])
+    # reshape instead of loop
     for n in range(len(df)):
         neuron = df.iloc[n, :]
         s = neuron[col]
@@ -82,26 +83,25 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
     if sort_method == "depth":
         # Add depths to the dataframe.
         # for idx, row in tqdm(df.iterrows()):
-            # i = depths_dict["ID"]==row["ID1"]
-            # j = depths_dict["RecSes"]==row["RecSes1"]
-            # depth = depths_dict["depth"][i&j]
-            # if len(depth) != 1:
-            #     print("Unable to order by depth as depth_dict does not uniquely identify neurons")
-            #     print("Switching to sorting by ID")
-            #     sort_method = "id"
-            #     break
-            # row["depth"] = depth[0]
+        #     i = depths_dict["ID"]==row["ID1"]
+        #     j = depths_dict["RecSes"]==row["RecSes1"]
+        #     depth = depths_dict["depth"][i&j]
+        #     if len(depth) != 1:
+        #         print("Unable to order by depth as depth_dict does not uniquely identify neurons")
+        #         print("Switching to sorting by ID")
+        #         sort_method = "id"
+        #         break
+        #     row["depth"] = depth[0]
         df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["ID2", "ID1"])
         df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :].sort_values(by=["ID2", "ID1"])
         df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :].sort_values(by=["ID2", "ID1"])
         df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :].sort_values(by=["ID2", "ID1"])
         
         for d in [df11, df12, df21, df22]:
-            depth_d = depth_df[depth_df["RecSes"]==d["RecSes1"].iloc[1]]          # subset of depth_df corresponding to d
-            d.insert(len(d.columns), "x", np.resize(depth_d["x"], len(d)))
-            d.insert(len(d.columns), "y", np.resize(depth_d["depth"], len(d)))
-            d.sort_values(by = ["x", "y"], inplace=True)
-    
+            depth_d1 = depth_df[depth_df["RecSes"]==d["RecSes1"].iloc[1]]          # subset of depth_df corresponding to d
+            d.insert(len(d.columns), "x", np.resize(depth_d1["x"], len(d)))
+            d.insert(len(d.columns), "y1", np.resize(depth_d1["depth"], len(d)))
+            d.sort_values(by = ["x", "y1", "y2"], inplace=True)
     
     else:
         df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
