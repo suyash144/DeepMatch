@@ -24,6 +24,7 @@ def compare_isi(mt_path:str):
     plt.hist(sorted["ISICorr"], bins = 500, label="Matches (as per DNNSim)")
     plt.hist(unsorted["ISICorr"], bins = 500, label="Random selection")
     plt.legend()
+    plt.xlabel("ISI Correlation")
     plt.show()
 
 
