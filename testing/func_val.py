@@ -67,28 +67,36 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
     """
     # Pick out the relevant columns and ensure they are sorted
     df = pd.read_csv(path_to_csv)
-    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
+    col = df.loc[:, "WavformSim":"LocTrajectorySim"]
+    df["NoLocScore"] = col.mean(axis=1)
+    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb", "NoLocScore"]]
     df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
     df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
     df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :]
     df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
+    
     if sort_method == "depth":
         sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim", "depth", rec1, rec2, depths)
         um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb", "depth", rec1, rec2, depths)
+        um_score = create_concat_mat(df11, df12, df21, df22, "NoLocScore", "depth", rec1, rec2, depths)
     elif sort_method == "id":
         sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim", "id")
         um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb")
+        um_score = create_concat_mat(df11, df12, df21, df22, "NoLocScore")
     else:
         raise ValueError("""Please pick a sorting method from 'depth' or 'id'
                          Default is id as this requires no info about spatial positions of neurons.
                          Depth gives better results though.""")
 
-    fig, (ax1, ax2) = plt.subplots(ncols = 2)
+    fig, (ax1, ax2, ax3) = plt.subplots(ncols = 3)
     ax1.matshow(sim_matrix)
     ax1.set_title("DNN Similarity matrix")
 
     ax2.matshow(um_output)
     ax2.set_title("UnitMatch match probabilities")
+
+    ax3.matshow(um_score)
+    ax3.set_title("UnitMatch score (no centroid)")
 
     plt.show()
 
