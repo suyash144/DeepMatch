@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import mat73
+from scipy.stats import rankdata
 
 def create_sim_mat(df, col):
     sessions = df["RecSes1"].iloc[1] == df["RecSes2"].iloc[1]
@@ -92,14 +93,26 @@ def reorder_by_depth(matrix:np.ndarray, depths, recses1:int):
     depths = depths.loc[depths["RecSes"]==recses1, :]
     depths.loc[:, "IDrank"] = depths["ID"].rank()-1
     res = np.empty(matrix.shape)
+    n1_depths = np.empty((matrix.shape[0],))
+    n2_depths = np.empty((matrix.shape[1],))
     for i, j in np.ndindex(matrix.shape):
-        # i = ID1, j = ID2. 
-        depth = depths.loc[depths["IDrank"]==i, "depth"]
-        depth = depth.tolist()
-        if len(depth) != 1:
-            print(len(depth))
+        depth_i = depths.loc[depths["IDrank"]==i, "depth"]
+        depth_i = depth_i.tolist()
+        if len(depth_i) != 1:
+            print(len(depth_i))
             raise ValueError("Unable to uniquely identify the neuron to find its depth")
-        res[i,j] = depth[0]
+        n1_depths[i] = depth_i[0]
+
+        depth_j = depths.loc[depths["IDrank"]==j, "depth"]
+        depth_j = depth_j.tolist()
+        if len(depth_j) != 1:
+            print(len(depth_j))
+            raise ValueError("Unable to uniquely identify the neuron to find its depth")
+        n2_depths[j] = depth_j[0]
+    n1_depths = (rankdata(n1_depths) - 1).astype(int)
+    n2_depths = (rankdata(n2_depths) - 1).astype(int)
+
+    
     return res
 
         
