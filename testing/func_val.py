@@ -17,11 +17,17 @@ def create_sim_mat(df, col):
     vals = vals.reshape((l1, l2))
     return vals
 
-def create_concat_mat(df11, df12, df21, df22, col):
+def create_concat_mat(df11, df12, df21, df22, col, sort_method="id", rec1=None, rec2=None, depths=None):
     s11 = create_sim_mat(df11, col)
     s12 = create_sim_mat(df12, col)
     s21 = create_sim_mat(df21, col)
     s22 = create_sim_mat(df22, col)
+
+    if sort_method=="depth":
+        s11 = reorder_by_depth(s11, depths, rec1, rec1)
+        s12 = reorder_by_depth(s12, depths, rec1, rec2)
+        s21 = reorder_by_depth(s21, depths, rec2, rec1)
+        s22 = reorder_by_depth(s22, depths, rec2, rec2)
         
     top_row = np.concatenate((s11, s12), axis = 1)
     bottom_row =  np.concatenate((s21, s22), axis = 1)
@@ -62,25 +68,25 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
     # Pick out the relevant columns and ensure they are sorted
     df = pd.read_csv(path_to_csv)
     df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
+    df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
+    df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
+    df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :]
+    df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
     if sort_method == "depth":
-        df.insert(len(df.columns), "depth", depths)
-        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
-        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
-        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
-        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
+        sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim", "depth", rec1, rec2, depths)
+        um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb", "depth", rec1, rec2, depths)
     elif sort_method == "id":
-        df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
-        df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
-        df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :]
-        df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
+        sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim", "id")
+        um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb")
     else:
-        raise ValueError("Please pick a sorting method from 'depth' or 'id'. Default is depth.")
-    sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim")
+        raise ValueError("""Please pick a sorting method from 'depth' or 'id'
+                         Default is id as this requires no info about spatial positions of neurons.
+                         Depth gives better results though.""")
+
     fig, (ax1, ax2) = plt.subplots(ncols = 2)
     ax1.matshow(sim_matrix)
     ax1.set_title("DNN Similarity matrix")
 
-    um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb")
     ax2.matshow(um_output)
     ax2.set_title("UnitMatch match probabilities")
 
@@ -139,15 +145,14 @@ def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
 path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
 # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
 
-proj_loc = read_depths("AL036", "19011116882", "3")
+depths = read_depths("AL036", "19011116882", "3")
 
-# compare_two_recordings(path_to_csv, 19, 20, depths=proj_loc)
+compare_two_recordings(path_to_csv, 19, 20, "depth", depths)
 
-# a = np.array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]])
-df = pd.read_csv(path_to_csv)
-df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
-df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
-mat = create_sim_mat(df11, "DNNSim")
-t = reorder_by_depth(mat, proj_loc, 19, 20)
-plt.matshow(t)
-plt.show()
+# df = pd.read_csv(path_to_csv)
+# df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
+# df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
+# mat = create_sim_mat(df11, "DNNSim")
+# t = reorder_by_depth(mat, proj_loc, 19, 20)
+# plt.matshow(t)
+# plt.show()
