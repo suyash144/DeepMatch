@@ -40,19 +40,17 @@ def roc_curve(mt_path:str):
     y = []
     x = []
     tp, fp, tn, fn = 0,0,0,0
-    for m in tqdm(range(1, len(DNN_matches), 100)):
-        preds = DNN_matches.head(m)
-        tp = sum(actual_matches.index.isin(preds.index))
-        fp = m - tp
-        fn = sum(actual_matches.index.isin(preds.index)==False)
+    for m in tqdm(np.array_split(DNN_matches, 500)):
+        tp += sum(actual_matches.index.isin(m.index))
+        fp += len(m) - tp
+        fn = len(actual_matches) - tp
         tn = len(DNN_matches) - len(actual_matches) - fp
         recall = tp/(tp+fn)
         fpr = fp/(tn+fp)
         y.append(recall)
         x.append(fpr)
-        if tp == len(actual_matches):
-            break
     plt.plot(x,y)
+    plt.grid()
     plt.show()
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
