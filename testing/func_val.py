@@ -34,13 +34,20 @@ def read_depths(mouse, probe, loc):
     um_path = os.path.join(base, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
     um = mat73.loadmat(um_path)
     pl = um["WaveformInfo"]["ProjectedLocation"]        # shape [3 x Nclus x 2]
-    pl = pl[1,:,:]                                      # shape [Nclus x 2]
-    pl = np.mean(pl, axis=1)
-    # pl has length N_clus and is ordered by clusID
-    # Equivalently, ordered by RecSes1 -> ID1 -> RecSes2 -> ID2
-    pl = np.array(pl)
-    pl = np.repeat(pl, len(pl))
-    return pl
+    x = pl[1,:,:]                                      # shape [Nclus x 2]
+    y = pl[2,:,:]
+    x = np.array(np.round(np.mean(x, axis=1), decimals=-2))
+    y = np.array(np.mean(y, axis=1))
+    if len(np.unique(x))!=4:
+        print(f"CAUTION: Found {len(np.unique(x))} clusters of x values rather than 4.")
+    uid = um["UniqueIDConversion"]["OriginalClusID"]
+    urs = um["UniqueIDConversion"]["recsesAll"]
+    goodids = um["UniqueIDConversion"]["GoodID"]
+    uid, urs = uid[goodids==1], urs[goodids==1]
+    depth_dict = {"RecSes": urs, "ID": uid, "IDrank": '', "x": x, "depth": y}
+    depth_df = pd.DataFrame(depth_dict)
+    # pl = np.repeat(pl, len(pl))
+    return depth_df
 
 def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "id", depths = None):
     """
@@ -53,7 +60,7 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
     """
     # Pick out the relevant columns and ensure they are sorted
     df = pd.read_csv(path_to_csv)
-    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]].sort_values(by=["RecSes1", 'RecSes2', 'ID1', 'ID2'])
+    df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
     if sort_method == "depth":
         df.insert(len(df.columns), "depth", depths)
         df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :].sort_values(by=["depth", "RecSes1", 'RecSes2', 'ID1', 'ID2'])
@@ -78,8 +85,24 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
 
     plt.show()
 
-def reorder_by_depth(matrix, depths):
-    pass
+def reorder_by_depth(matrix:np.ndarray, depths, recses1:int):
+    """
+    Matrix should compare just one recording session against another.
+    """
+    depths = depths.loc[depths["RecSes"]==recses1, :]
+    depths.loc[:, "IDrank"] = depths["ID"].rank()-1
+    res = np.empty(matrix.shape)
+    for i, j in np.ndindex(matrix.shape):
+        # i = ID1, j = ID2. 
+        depth = depths.loc[depths["IDrank"]==i, "depth"]
+        depth = depth.tolist()
+        if len(depth) != 1:
+            print(len(depth))
+            raise ValueError("Unable to uniquely identify the neuron to find its depth")
+        res[i,j] = depth[0]
+    return res
+
+        
 
 # sims = df["DNNSim"]
 # probs = df["DNNProb"]
@@ -100,4 +123,13 @@ path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtab
 
 proj_loc = read_depths("AL036", "19011116882", "3")
 
-compare_two_recordings(path_to_csv, 19, 20)
+# compare_two_recordings(path_to_csv, 19, 20, depths=proj_loc)
+
+# a = np.array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]])
+df = pd.read_csv(path_to_csv)
+df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
+df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 19), :]
+mat = create_sim_mat(df11, "DNNSim")
+t = reorder_by_depth(mat, proj_loc, 19)
+plt.matshow(t)
+plt.show()
