@@ -12,12 +12,9 @@ def create_sim_mat(df, col):
         l1 = len(df["ID1"].unique())
         l2 = len(df["ID2"].unique())
         assert l1 * l2 == len(df)
-    mat = np.empty((l1, l2))
-    for n in range(len(df)):
-        neuron = df.iloc[n, :]
-        s = neuron[col]
-        mat[n//l2, n % l2] = s
-    return mat
+    vals = np.array(df[col])
+    vals = vals.reshape((l1, l2))
+    return vals
 
 def create_concat_mat(df11, df12, df21, df22, col):
     s11 = create_sim_mat(df11, col)
@@ -81,6 +78,8 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
 
     plt.show()
 
+def reorder_by_depth(matrix, depths):
+    pass
 
 # sims = df["DNNSim"]
 # probs = df["DNNProb"]
@@ -99,6 +98,6 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
 path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
 # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
 
-# proj_loc = read_depths("AL036", "19011116882", "3")
+proj_loc = read_depths("AL036", "19011116882", "3")
 
 compare_two_recordings(path_to_csv, 19, 20)
