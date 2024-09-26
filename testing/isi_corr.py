@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 
@@ -30,8 +31,32 @@ def compare_isi(mt_path:str):
     plt.xlabel("ISI Correlation")
     plt.show()
 
+def roc_curve(mt_path:str):
+
+    mt = pd.read_csv(mt_path)
+    DNN_matches = mt.sort_values(by = "DNNSim", ascending=False)
+    actual_matches = mt.loc[(mt["RecSes1"]==mt["RecSes2"]) & (mt["ID1"]==mt["ID2"]), ["RecSes1", "RecSes2", "ID1", "ID2"]]
+
+    y = []
+    x = []
+    tp, fp, tn, fn = 0,0,0,0
+    for m in tqdm(range(1, len(DNN_matches), 100)):
+        preds = DNN_matches.head(m)
+        tp = sum(actual_matches.index.isin(preds.index))
+        fp = m - tp
+        fn = sum(actual_matches.index.isin(preds.index)==False)
+        tn = len(DNN_matches) - len(actual_matches) - fp
+        recall = tp/(tp+fn)
+        fpr = fp/(tn+fp)
+        y.append(recall)
+        x.append(fpr)
+        if tp == len(actual_matches):
+            break
+    plt.plot(x,y)
+    plt.show()
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
-compare_isi(mt_path)
+mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+# compare_isi(mt_path)
+roc_curve(mt_path)
