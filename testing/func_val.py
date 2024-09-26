@@ -86,24 +86,26 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "i
 
     plt.show()
 
-def reorder_by_depth(matrix:np.ndarray, depths, recses1:int):
+def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
     """
     Matrix should compare just one recording session against another.
     """
-    depths = depths.loc[depths["RecSes"]==recses1, :]
-    depths.loc[:, "IDrank"] = depths["ID"].rank()-1
+    depths1 = depths.loc[depths["RecSes"]==recses1, :]
+    depths2 = depths.loc[depths["RecSes"]==recses2, :]
+    depths1.loc[:, "IDrank"] = depths1["ID"].rank()-1
+    depths2.loc[:, "IDrank"] = depths2["ID"].rank()-1
     res = np.empty(matrix.shape)
     n1_depths = np.empty((matrix.shape[0],))
     n2_depths = np.empty((matrix.shape[1],))
     for i, j in np.ndindex(matrix.shape):
-        depth_i = depths.loc[depths["IDrank"]==i, "depth"]
+        depth_i = depths1.loc[depths1["IDrank"]==i, "depth"]
         depth_i = depth_i.tolist()
         if len(depth_i) != 1:
             print(len(depth_i))
             raise ValueError("Unable to uniquely identify the neuron to find its depth")
         n1_depths[i] = depth_i[0]
 
-        depth_j = depths.loc[depths["IDrank"]==j, "depth"]
+        depth_j = depths2.loc[depths2["IDrank"]==j, "depth"]
         depth_j = depth_j.tolist()
         if len(depth_j) != 1:
             print(len(depth_j))
@@ -146,6 +148,6 @@ df = pd.read_csv(path_to_csv)
 df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
 df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
 mat = create_sim_mat(df11, "DNNSim")
-t = reorder_by_depth(mat, proj_loc, 19)
+t = reorder_by_depth(mat, proj_loc, 19, 20)
 plt.matshow(t)
 plt.show()
