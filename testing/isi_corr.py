@@ -18,17 +18,20 @@ def compare_isi(mt_path:str):
         matches = int(matches)
     else:
         raise ValueError("Length of matchtable is not (no. of neurons)^2")
+    same_neuron = mt.loc[(mt["RecSes1"]==mt["RecSes2"]) & (mt["ID1"]==mt["ID2"]), ["DNNSim", "ISICorr"]]
     sorted = mt.sort_values(by = "DNNSim", ascending=False).head(matches)
     sorted = sorted.loc[:, ["DNNSim", "ISICorr"]]
     unsorted = mt.head(matches)
-    plt.hist(sorted["ISICorr"], bins = 500, label="Matches (as per DNNSim)")
-    plt.hist(unsorted["ISICorr"], bins = 500, label="Random selection")
+    assert len(same_neuron) == len(unsorted) == len(sorted)
+    plt.hist(sorted["ISICorr"], bins = 500, label="Matches (as per DNNSim)", fc = (0, 0, 1, 0.9))
+    plt.hist(same_neuron["ISICorr"], bins = 500, label="Comparing units to themselves", fc = (0, 1, 0, 0.5))
+    plt.hist(unsorted["ISICorr"], bins = 500, label="Random selection", fc = (1, 0, 0, 0.5))
     plt.legend()
     plt.xlabel("ISI Correlation")
     plt.show()
 
 
-# compare_isi(test_data_root, "AL031", "19011116684", "1")
-# compare_isi(test_data_root, "AL032", "19011111882", "2")
+# mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+# mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
 compare_isi(mt_path)
