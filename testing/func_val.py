@@ -111,7 +111,10 @@ def reorder_by_depth(matrix:np.ndarray, depths, recses1:int):
         n2_depths[j] = depth_j[0]
     n1_depths = (rankdata(n1_depths) - 1).astype(int)
     n2_depths = (rankdata(n2_depths) - 1).astype(int)
-
+    for idxi, idxj in np.ndindex(matrix.shape):
+        new_i = n1_depths[idxi]
+        new_j = n2_depths[idxj]
+        res[new_i, new_j] = matrix[idxi, idxj]
     
     return res
 
@@ -141,7 +144,7 @@ proj_loc = read_depths("AL036", "19011116882", "3")
 # a = np.array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]])
 df = pd.read_csv(path_to_csv)
 df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
-df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 19), :]
+df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
 mat = create_sim_mat(df11, "DNNSim")
 t = reorder_by_depth(mat, proj_loc, 19)
 plt.matshow(t)
