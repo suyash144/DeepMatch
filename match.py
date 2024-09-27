@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import mat73
+import matplotlib.pyplot as plt
 from utils.myutil import get_exp_id
 from utils.read_pos import read_pos
 
@@ -29,7 +30,7 @@ def generate_matches(mt_path, sample_size, rec1, rec2):
     positions2 = pd.DataFrame(read_pos(exp2))
 
     df = pd.read_csv(mt_path)
-    df = df.loc[(df["RecSes1"]==rec1) & (df["RecSes2"]==rec2),["DNNProb", "DNNSim", "ID1", "ID2", "EucledianDistance"]]
+    df = df.loc[(df["RecSes1"]==rec1) & (df["RecSes2"]==rec2),["DNNProb", "DNNSim", "ID1", "ID2", "CentroidDist"]]
     putative_matches = df.sort_values(by = "DNNSim", ascending=False).head(sample_size)
     putative_matches.insert(len(putative_matches.columns), "dist", '')
 
@@ -40,11 +41,12 @@ def generate_matches(mt_path, sample_size, rec1, rec2):
         y2 = positions2.loc[positions2["file"]==row["ID1"], "y"].item()
 
         dist = np.sqrt((x2 - x1)**2 + (y2-y1)**2)
+        # scaling steps to get centroid similarity (I think)
+        # dist = (100-dist)/100
+        # if dist < 0:
+        #     dist = 0
         putative_matches.at[idx, "dist"] = dist
-    print(putative_matches.loc[:,["EucledianDistance", "dist"]])
-
-
-
+    print(putative_matches.loc[:,["CentroidDist", "dist"]])    # euclidean dist =/= my calculated dist
 
 mt_path = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
 
