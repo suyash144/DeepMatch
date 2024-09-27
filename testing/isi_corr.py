@@ -50,11 +50,13 @@ def roc_curve(mt_path:str):
         y.append(recall)
         x.append(fpr)
     plt.plot(x,y)
+    plt.ylabel("Recall")
+    plt.xlabel("False positive rate")
     plt.grid()
     plt.show()
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "wentao_model.csv")       # 2497 neurons
 # compare_isi(mt_path)
 roc_curve(mt_path)
