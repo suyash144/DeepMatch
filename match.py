@@ -25,15 +25,25 @@ def generate_matches(mt_path, sample_size, rec1, rec2):
     exp1 = os.path.join(os.path.dirname(mt_path), expid1, "processed_waveforms")
     exp2 = os.path.join(os.path.dirname(mt_path), expid2, "processed_waveforms")
 
-    x1, y1 = read_pos(exp1)
-    x2, y2 = read_pos(exp2)
+    positions1 = pd.DataFrame(read_pos(exp1))
+    positions2 = pd.DataFrame(read_pos(exp2))
 
     df = pd.read_csv(mt_path)
-    df = df.loc[(df["RecSes1"]==rec1) & (df["RecSes2"]==rec2),["DNNProb", "DNNSim", "ID1", "ID2"]]
+    df = df.loc[(df["RecSes1"]==rec1) & (df["RecSes2"]==rec2),["DNNProb", "DNNSim", "ID1", "ID2", "EucledianDistance"]]
     putative_matches = df.sort_values(by = "DNNSim", ascending=False).head(sample_size)
+    putative_matches.insert(len(putative_matches.columns), "dist", '')
 
-    for row in putative_matches.iterrows():
-        pass
+    for idx, row in putative_matches.iterrows():
+        x1 = positions1.loc[positions1["file"]==row["ID1"], "x"].item()
+        y1 = positions1.loc[positions1["file"]==row["ID1"], "y"].item()
+        x2 = positions2.loc[positions2["file"]==row["ID1"], "x"].item()
+        y2 = positions2.loc[positions2["file"]==row["ID1"], "y"].item()
+
+        dist = np.sqrt((x2 - x1)**2 + (y2-y1)**2)
+        putative_matches.at[idx, "dist"] = dist
+    print(putative_matches.loc[:,["EucledianDistance", "dist"]])
+
+
 
 
 mt_path = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
