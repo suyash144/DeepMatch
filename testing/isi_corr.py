@@ -32,7 +32,10 @@ def compare_isi(mt_path:str):
     plt.show()
 
 def roc_curve(mt_path:str):
-
+    """
+    Input: Full absolute path to the matchtable with the DNNSim outputs you want to use.
+    Match table must be fully filled in with DNNSim (every single row)
+    """
     mt = pd.read_csv(mt_path)
     DNN_matches = mt.sort_values(by = "DNNSim", ascending=False)
     actual_matches = mt.loc[(mt["RecSes1"]==mt["RecSes2"]) & (mt["ID1"]==mt["ID2"]), ["RecSes1", "RecSes2", "ID1", "ID2"]]
@@ -49,6 +52,10 @@ def roc_curve(mt_path:str):
         fpr = fp/(tn+fp)
         y.append(recall)
         x.append(fpr)
+    x.append(1)
+    y.append(y[-1])
+    auc = np.trapz(y, x)
+    print(auc)
     plt.plot(x,y)
     plt.ylabel("Recall")
     plt.xlabel("False positive rate")
@@ -57,6 +64,6 @@ def roc_curve(mt_path:str):
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "wentao_model.csv")       # 2497 neurons
+mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi(mt_path)
 roc_curve(mt_path)
