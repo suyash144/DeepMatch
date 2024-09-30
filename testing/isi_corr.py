@@ -44,8 +44,9 @@ def roc_curve(mt_path:str):
     x = []
     tp, fp, tn, fn = 0,0,0,0
     for m in tqdm(np.array_split(DNN_matches, 500)):
-        tp += sum(actual_matches.index.isin(m.index))
-        fp += len(m) - tp
+        new_tp = sum(actual_matches.index.isin(m.index))
+        tp += new_tp
+        fp += len(m) - new_tp
         fn = len(actual_matches) - tp
         tn = len(DNN_matches) - len(actual_matches) - fp
         recall = tp/(tp+fn)
