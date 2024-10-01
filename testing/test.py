@@ -9,13 +9,11 @@ from utils.npdataset import NeuropixelsDataset, ValidationExperimentBatchSampler
 import numpy as np
 from models.mymodel import *
 from torch.utils.data import DataLoader
-from torch import unsqueeze
 from tqdm import tqdm
 import pandas as pd
 import mat73
 from utils.myutil import get_exp_id, get_unit_id
 from scipy.special import softmax
-from collections import namedtuple
 
 def load_trained_model(model_name:str, device):
     # Load the trained model

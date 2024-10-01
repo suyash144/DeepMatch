@@ -51,9 +51,9 @@ def read_depths(mouse, probe, loc):
     urs = um["UniqueIDConversion"]["recsesAll"]
     goodids = um["UniqueIDConversion"]["GoodID"]
     uid, urs = uid[goodids==1], urs[goodids==1]
-    depth_dict = {"RecSes": urs, "ID": uid, "IDrank": '', "x": x, "depth": y}
+    depth = x * 1e6 + y
+    depth_dict = {"RecSes": urs, "ID": uid, "IDrank": '', "depth": depth}
     depth_df = pd.DataFrame(depth_dict)
-    # pl = np.repeat(pl, len(pl))
     return depth_df
 
 def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "id", depths = None):
