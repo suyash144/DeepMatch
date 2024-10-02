@@ -33,7 +33,7 @@ def compare_isi_with_dnnsim(mt_path:str):
     plt.xlabel("ISI Correlation")
     plt.show()
 
-def roc_curve(mt_path:str):
+def roc_curve_old(mt_path:str):
     """
     Input: Full absolute path to the matchtable with the DNNSim outputs you want to use.
     Match table must be fully filled in with DNNSim (every single row)
@@ -98,6 +98,19 @@ def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     plt.title("ISI correlation histogram")
     plt.show()
 
+def roc_curve(mt_path:str):
+    thresh = dnn_dist.get_threshold(mt_path, False)
+    if not os.path.exists(mt_path):
+        raise ValueError(f"Matchtable not found at {mt_path}")
+    mt = pd.read_csv(mt_path)
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
+
+    matches_across = across.loc[mt["DNNSim"]>=thresh, ["ISICorr"]]
+    non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), ["ISICorr"]]
+    same_within = within.loc[(mt["ID1"]==mt["ID2"]), ["ISICorr"]]
+
+    
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
