@@ -47,23 +47,24 @@ def plot_hist(mt_path:str, thresh=None):
     mt = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), :]              # Select the rows we want to use
 
     # On-diagonal means same neuron. Off-diagonal means different neurons.
-    on_diag = mt.loc[(mt["ID1"]==mt["ID2"]), ["DNNSim"]]
-    off_diag = mt.loc[(mt["ID1"]!=mt["ID2"]), ["DNNSim"]]
+    # on_diag = mt.loc[(mt["ID1"]==mt["ID2"]), ["DNNSim"]]
+    # off_diag = mt.loc[(mt["ID1"]!=mt["ID2"]), ["DNNSim"]]
 
     # sanity check that the categories are being loaded correctly
-    assert sum(on_diag.index.isin(off_diag.index)) == 0
+    # assert sum(on_diag.index.isin(off_diag.index)) == 0
 
     # visualise the results
-    plt.hist(on_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="On diagonal")
-    plt.hist(off_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="Off diagonal")
+    # plt.hist(on_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="On diagonal")
+    # plt.hist(off_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="Off diagonal")
+    plt.hist(mt["DNNSim"], bins = 500, alpha = 0.5, density=True)
     if thresh:
         # if a threshold is provided then plot it as a vertical line.
         plt.axvline(x=thresh)
 
     plt.grid()
-    plt.legend()
+    # plt.legend()
     plt.xlabel("DNNSim")
-    plt.title("Normalised histograms for on- and off-diagonal DNNSim values in the same recording")
+    # plt.title("Normalised histograms for on- and off-diagonal DNNSim values")
     plt.show()
 
 
