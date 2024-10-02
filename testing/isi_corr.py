@@ -109,15 +109,51 @@ def roc_curve(mt_path:str):
     within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
     across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
 
+    # Correct for different median similarities between within- and across-day sets.
+    diff = np.median(within["DNNSim"]) - np.median(across["DNNSim"])
+    thresh = thresh - diff
+
     matches_across = across.loc[mt["DNNSim"]>=thresh, ["ISICorr"]]
     non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), ["ISICorr"]]
     same_within = within.loc[(mt["ID1"]==mt["ID2"]), ["ISICorr"]]
 
+    sorted_within = within.sort_values(by = "ISICorr", ascending=False)
+    sorted_across = across.sort_values(by = "ISICorr", ascending=False)
 
+    tp_g, fp_g, tp_r, fp_r = 0,0,0,0
+    N_w = len(non_matches)
+    P_w = len(same_within)
+    N_a = len(across) - len(matches_across)
+    P_a = len(matches_across)
+    recall_g, fpr_g, recall_r, fpr_r = [], [], [], []
+
+    for idx, row in sorted_within.iterrows():
+        if row["ID1"]==row["ID2"]:
+            tp_g+=1
+        else:
+            fp_g+=1
+        recall_g.append(tp_g/P_w)
+        fpr_g.append(fp_g/N_w)
+    for idx, row in sorted_across.iterrows():
+        if idx in matches_across.index:
+            tp_r+=1
+        else:
+            fp_r+=1
+        recall_r.append(tp_r/P_a)
+        fpr_r.append(fp_r/N_a)
+
+    plt.plot(fpr_g, recall_g, "g", label="Same units within days")
+    print(f"Green AUC = {np.trapz(recall_g, fpr_g)}")
+    plt.plot(fpr_r, recall_r, "r", label="Matches across days")
+    print(f"Red AUC = {np.trapz(recall_r, fpr_r)}")
+        
+    plt.grid()
+    plt.legend()
+    plt.show()
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path)
-threshold_isi(mt_path, normalise=True, kde=True)
+roc_curve(mt_path)
+# threshold_isi(mt_path, normalise=True, kde=True)
