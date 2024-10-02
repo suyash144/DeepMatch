@@ -69,14 +69,18 @@ def threshold_isi(mt_path:str, normalise:bool=True):
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     mt = pd.read_csv(mt_path)
-    mt = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr"]]          # Only keep within-day bits
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
 
-    matches = mt.loc[mt["DNNSim"]>=thresh, :]
-    non_matches = mt.loc[mt["DNNSim"]<thresh, :]
-    plt.hist(non_matches["ISICorr"], bins=500, alpha=0.5, density=normalise, label="Non-matches (below DNNSim threshold)")
-    plt.hist(matches["ISICorr"], bins=500, alpha=0.5, density=normalise, label="Matches (above DNNSim threshold)")
+    matches_across = across.loc[mt["DNNSim"]>=thresh, :]
+    non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), :]
+    same_within = within.loc[(mt["ID1"]==mt["ID2"]), :]
+    plt.hist(non_matches["ISICorr"], bins=500, alpha=0.5, fc = "blue", density=normalise, label="Different units within days")
+    plt.hist(matches_across["ISICorr"], bins=500, alpha=0.5, fc = "red", density=normalise, label="Matches across days(above DNNSim threshold)")
+    plt.hist(same_within["ISICorr"], bins=500, alpha=0.5, fc = "green", density=normalise, label="Same units within days")
     plt.legend()
     plt.xlabel("ISI correlation")
+    plt.title("ISI correlation histogram")
     plt.show()
 
 
@@ -85,4 +89,4 @@ def threshold_isi(mt_path:str, normalise:bool=True):
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
 # roc_curve(mt_path)
-threshold_isi(mt_path, False)
+threshold_isi(mt_path, normalise=True)
