@@ -42,6 +42,27 @@ def get_threshold(mt_path:str, vis:bool=True):
         plt.show()
     return x[thresh].item()
 
+def plot_hist(mt_path:str):
+    mt = pd.read_csv(mt_path)
+    mt = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), :]              # Only use within day rows to compute threshold
+
+    # On-diagonal means same neuron. Off-diagonal means different neurons.
+    on_diag = mt.loc[(mt["RecSes1"]==mt["RecSes2"]) & (mt["ID1"]==mt["ID2"]), ["DNNSim"]]
+    off_diag = mt.loc[((mt["RecSes1"]==mt["RecSes2"]) & (mt["ID1"]==mt["ID2"]))==False, ["DNNSim"]]
+
+    # sanity check that the categories are being loaded correctly
+    assert sum(on_diag.index.isin(off_diag.index)) == 0
+
+    # visualise the results
+    plt.hist(on_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="On diagonal")
+    plt.hist(off_diag["DNNSim"], bins = 500, alpha = 0.5, density=True, label="Off diagonal")
+
+    plt.grid()
+    plt.legend()
+    plt.xlabel("DNNSim")
+    plt.title("Normalised histograms for on- and off-diagonal DNNSim values in the same recording")
+    plt.show()
+
 
 test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 
@@ -49,3 +70,4 @@ test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 
 thresh = get_threshold(mt_path, vis=True)
+# plot_hist(mt_path)
