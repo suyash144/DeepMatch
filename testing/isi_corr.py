@@ -3,10 +3,11 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import dnn_dist
 
 test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 
-def compare_isi(mt_path:str):
+def compare_isi_with_dnnsim(mt_path:str):
     """
     Pass in path to the match table csv file.
     Shows the ISI correlation histogram for that set of experiments.
@@ -63,8 +64,25 @@ def roc_curve(mt_path:str):
     plt.grid()
     plt.show()
 
+def threshold_isi(mt_path:str, normalise:bool=True):
+    thresh = dnn_dist.get_threshold(mt_path, False)
+    if not os.path.exists(mt_path):
+        raise ValueError(f"Matchtable not found at {mt_path}")
+    mt = pd.read_csv(mt_path)
+    mt = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr"]]          # Only keep within-day bits
+
+    matches = mt.loc[mt["DNNSim"]>=thresh, :]
+    non_matches = mt.loc[mt["DNNSim"]<thresh, :]
+    plt.hist(non_matches["ISICorr"], bins=500, alpha=0.5, density=normalise, label="Non-matches (below DNNSim threshold)")
+    plt.hist(matches["ISICorr"], bins=500, alpha=0.5, density=normalise, label="Matches (above DNNSim threshold)")
+    plt.legend()
+    plt.xlabel("ISI correlation")
+    plt.show()
+
+
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-# compare_isi(mt_path)
-roc_curve(mt_path)
+# compare_isi_with_dnnsim(mt_path)
+# roc_curve(mt_path)
+threshold_isi(mt_path, False)

@@ -25,7 +25,7 @@ def get_threshold(mt_path:str, vis:bool=True):
 
     # Find the threshold where the distributions intersect
     thresh=np.argwhere(np.diff(np.sign(y_off - y_on)))
-    print(f"Threshold: {x[thresh].item()}")
+    print(f"Threshold: DNNSim = {x[thresh].item()}")
 
     if vis:
         # visualise the results
@@ -67,11 +67,11 @@ def plot_hist(mt_path:str, thresh=None):
     # plt.title("Normalised histograms for on- and off-diagonal DNNSim values")
     plt.show()
 
+if __name__ == "__main__":
+    test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 
-test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
+    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 
-# mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-
-thresh = get_threshold(mt_path, vis=False)
-plot_hist(mt_path, thresh)
+    thresh = get_threshold(mt_path, vis=False)
+    plot_hist(mt_path, thresh)
