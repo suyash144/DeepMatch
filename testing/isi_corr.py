@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
+from sklearn.neighbors import KernelDensity
 
 test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
 
@@ -64,7 +65,7 @@ def roc_curve(mt_path:str):
     plt.grid()
     plt.show()
 
-def threshold_isi(mt_path:str, normalise:bool=True):
+def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     thresh = dnn_dist.get_threshold(mt_path, False)
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
@@ -72,12 +73,26 @@ def threshold_isi(mt_path:str, normalise:bool=True):
     within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
     across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
 
-    matches_across = across.loc[mt["DNNSim"]>=thresh, :]
-    non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), :]
-    same_within = within.loc[(mt["ID1"]==mt["ID2"]), :]
-    plt.hist(non_matches["ISICorr"], bins=500, alpha=0.5, fc = "blue", density=normalise, label="Different units within days")
-    plt.hist(matches_across["ISICorr"], bins=500, alpha=0.5, fc = "red", density=normalise, label="Matches across days(above DNNSim threshold)")
-    plt.hist(same_within["ISICorr"], bins=500, alpha=0.5, fc = "green", density=normalise, label="Same units within days")
+    matches_across = across.loc[mt["DNNSim"]>=thresh, ["ISICorr"]]
+    non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), ["ISICorr"]]
+    same_within = within.loc[(mt["ID1"]==mt["ID2"]), ["ISICorr"]]
+    if kde:
+        # Do kernel density estimation and plot distributions instead of histograms
+        # This looks cleaner but runs slower
+        m_a = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(matches_across)
+        n_m = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(non_matches)
+        s_w = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(same_within)
+        x = np.linspace(min(non_matches["ISICorr"]), max(same_within["ISICorr"]), 1000).reshape(-1, 1)
+        m_a = np.exp(m_a.score_samples(x))
+        n_m = np.exp(n_m.score_samples(x))
+        s_w = np.exp(s_w.score_samples(x))
+        plt.plot(x, m_a, "r", label="Matches across days (above DNNSim threshold)")
+        plt.plot(x, n_m, "b", label="Different units within days")
+        plt.plot(x, s_w, "g", label="Same units within days")
+    else:
+        plt.hist(matches_across["ISICorr"], bins=500, alpha=0.5, fc = "red", density=normalise, label="Matches across days (above DNNSim threshold)")
+        plt.hist(non_matches["ISICorr"], bins=500, alpha=0.5, fc = "blue", density=normalise, label="Different units within days")
+        plt.hist(same_within["ISICorr"], bins=500, alpha=0.5, fc = "green", density=normalise, label="Same units within days")
     plt.legend()
     plt.xlabel("ISI correlation")
     plt.title("ISI correlation histogram")
@@ -89,4 +104,4 @@ def threshold_isi(mt_path:str, normalise:bool=True):
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
 # roc_curve(mt_path)
-threshold_isi(mt_path, normalise=True)
+threshold_isi(mt_path, normalise=True, kde=False)
