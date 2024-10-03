@@ -12,7 +12,7 @@ from scipy.optimize import linear_sum_assignment
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.join(os.pardir, os.pardir))
-    sys.path.insert(0, os.path.join(os.pardir))
+    sys.path.insert(0, os.getcwd())
 
 from models.mymodel import *
 from utils.myutil import *
@@ -136,7 +136,7 @@ def get_combined_neurons(good_units_files_row,good_units_files_col,day1_MaxSitep
     return combined_neurons
 
 # plot neighboring neurons and same neurons together
-def get_sim_distribution_within_day_tg(sim_matrix, combined_neurons, mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index):
+def get_sim_distribution_within_day_tg(sim_matrix, combined_neurons, mouse,probe,location,exps,model_name,session_pair,nbins,days_index):
     '''
     Inputs: 
     sim_matrix: shape (num_units_row, num_units_col)
@@ -165,7 +165,7 @@ def get_sim_distribution_within_day_tg(sim_matrix, combined_neurons, mouse,probe
     fig_save_folder = os.path.join(os.getcwd(),os.pardir,'figures','dnn',model_name,mouse,'session_pair'+session_pair)
     if not os.path.exists(fig_save_folder):
         os.makedirs(fig_save_folder, exist_ok=True)
-    exact_day = dates[days_index]
+    # exact_day = dates[days_index]
     exp = exps[days_index]
     filename = 'similarity_distribution_combined_'+ mouse +'_'+ exp +'.png'
     plt.savefig(os.path.join(fig_save_folder,filename))
@@ -219,7 +219,7 @@ def get_sim_distribution_within_day_sp(sim_matrix, neighboring_neurons, mouse,pr
     plt.savefig(os.path.join(fig_save_folder,filename))
     plt.close()
 
-def get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons,mouse,probe,location,dates,exps,model_name,session_pair,boundary_similarity_value,nbins):
+def get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons,mouse,probe,location,exps,model_name,session_pair,boundary_similarity_value,nbins):
     N,M = sim_matrix_12.shape
     dist_values_12 = []
     dist_values_21 = []
@@ -262,7 +262,7 @@ def get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neu
     # plt.close()
     # return median_value
 
-def get_sim_distribution_intersect(sim_matrix,neighboring_neurons,mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index):  
+def get_sim_distribution_intersect(sim_matrix,neighboring_neurons,mouse,probe,location,exps,model_name,session_pair,nbins,days_index):  
     '''
     Inputs: 
     sim_matrix: shape (num_units_row, num_units_col)
@@ -328,7 +328,7 @@ def get_sim_distribution_intersect(sim_matrix,neighboring_neurons,mouse,probe,lo
     fig_save_folder = os.path.join(os.getcwd(), os.pardir, 'figures', 'dnn', model_name, mouse, 'session_pair' + session_pair)
     if not os.path.exists(fig_save_folder):
         os.makedirs(fig_save_folder, exist_ok=True)
-    exact_day = dates[days_index]
+    # exact_day = dates[days_index]
     exp = exps[days_index]
     filename = 'similarity_distribution_intersect_' + mouse + '_' + exp+'.png'
     plt.savefig(os.path.join(fig_save_folder, filename))
@@ -409,9 +409,9 @@ def tracking_method_for_inference(sim_matrix_12,sim_matrix_21,day1_MaxSitepos,da
     return pred_pairs
 
 if __name__ == '__main__':
-    base = os.path.join(os.getcwd(),os.pardir,os.pardir)
+    base = os.getcwd()
     # load model
-    model_name = '2024_2_13_ag_ft_SpatioTemporalCNN_V2'
+    model_name = 'incl_AV008'
     # model_name = '2024_2_13_ft_SpatioTemporalCNN_V2'
     ckpt_path = os.path.join('ModelExp','experiments', model_name, 'ckpt', 'ckpt_epoch_49')
     ckpt_path = os.path.join(base, ckpt_path)
@@ -422,17 +422,19 @@ if __name__ == '__main__':
     mouse = 'AL036'
     probe = '19011116882'
     location = '3'
-    dates = ['2020-08-04', '2020-08-05']
-    exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
-            'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
+    # dates = ['2020-08-04', '2020-08-05']
+    # exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
+    #         'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
+    exps = ["_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output",
+            "_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output"]
     session_pair = '2'
 
     print('mouse',mouse,'session_pair',session_pair)
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exps,mode)
+    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,"train")
     rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half = get_representation_dnn(model,good_units_files_1,good_units_files_2)
     sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22 = get_sim_matrix_all(rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half)
     del rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half
-    
+
     # original plot
     # visualize_sim_matrix_all(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22, mouse, probe, location, dates, exps, model_name)
     
@@ -457,8 +459,8 @@ if __name__ == '__main__':
     nbins = max_neuron_day // 5
     # get_sim_distribution_within_day_sp(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,dates,exps,model_name,nbins,days_index=0)  
     # get_sim_distribution_within_day_sp(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,dates,exps,model_name,nbins,days_index=1)
-    boundary_similarity_value_day1 = get_sim_distribution_intersect(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index=0)  
-    boundary_similarity_value_day2 = get_sim_distribution_intersect(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index=1)
+    boundary_similarity_value_day1 = get_sim_distribution_intersect(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)  
+    boundary_similarity_value_day2 = get_sim_distribution_intersect(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
     # if max_neuron_day > 100:
     #     within_day_sim_thr = max(boundary_similarity_value_day1, boundary_similarity_value_day2)
     # else:
@@ -468,8 +470,8 @@ if __name__ == '__main__':
     # within_day_sim_thr =  (boundary_similarity_value_day1 + boundary_similarity_value_day2) / 2
     # print('within_day_sim_thr',within_day_sim_thr)
     # plot within-day sim distribution for combined neurons
-    median_value_within_day1 = get_sim_distribution_within_day_tg(sim_matrix_11, combined_neurons_within_day1, mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index=0)
-    median_value_within_day2 = get_sim_distribution_within_day_tg(sim_matrix_22, combined_neurons_within_day2, mouse,probe,location,dates,exps,model_name,session_pair,nbins,days_index=1)
+    median_value_within_day1 = get_sim_distribution_within_day_tg(sim_matrix_11, combined_neurons_within_day1, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)
+    median_value_within_day2 = get_sim_distribution_within_day_tg(sim_matrix_22, combined_neurons_within_day2, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
     # if max_neuron_day > 100:
     #     median_value_within_day = min(median_value_within_day1, median_value_within_day2)
     # else:
@@ -483,7 +485,7 @@ if __name__ == '__main__':
     # get combined neurons
     combined_neurons_across_day = get_combined_neurons(good_units_files_1,good_units_files_2,day1_MaxSitepos,day2_MaxSitepos)
     # plot across-day sim distribution
-    median_value_across_day_12,median_value_across_day_21 = get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons_across_day,mouse,probe,location,dates,exps,model_name,session_pair,within_day_sim_thr,nbins)
+    median_value_across_day_12,median_value_across_day_21 = get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons_across_day,mouse,probe,location,exps,model_name,session_pair,within_day_sim_thr,nbins)
     median_value_across_day = max(median_value_across_day_12, median_value_across_day_21)
     # print('median_value_across_day',median_value_across_day)
     # get across-day sim threshold

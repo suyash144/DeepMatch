@@ -153,7 +153,7 @@ def roc_curve(mt_path:str):
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "wentao_model.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
 roc_curve(mt_path)
 # threshold_isi(mt_path, normalise=True, kde=True)

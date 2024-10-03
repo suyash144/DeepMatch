@@ -68,7 +68,7 @@ def select_good_units_files_indices(directory, good_units_value):
                 good_units_indices.append(index)
             else:
                 print(f"Warning: Expected file {filename} does not exist.")
-                sys.exit()
+                # sys.exit()
     return good_units_files, good_units_indices
 
 def load_channel_positions(mouse,probe,location,date,experiment,mode='train'):
@@ -118,21 +118,25 @@ def normalize_waveform(waveform):
     waveform = (waveform - min_val) / (max_val - min_val)
     return waveform
 
-def load_mouse_data(mouse,probe,location,dates,exps,mode='test'):
-    base_path = os.path.join(os.getcwd(),os.pardir)
+def load_mouse_data(mouse,probe,location,exps,mode='test'):
+    base_path = os.path.dirname(os.getcwd())
     if mode == 'test':
         base_path = os.path.join(base_path,'test_R_DATA_UnitMatch')
     else:
         base_path = os.path.join(base_path,'R_DATA_UnitMatch')
     # first date
-    base_path_1 = os.path.join(base_path,mouse,probe,location,dates[0],exps[0])
-    waveform_path_1 = os.path.join(base_path_1,'RawWaveforms')
-    good_units_index_1 = read_good_id_from_mat(os.path.join(base_path_1, 'PreparedData.mat'))
+    base_path_1 = os.path.join(base_path,mouse,probe,location,exps[0])
+    waveform_path_1 = os.path.join(base_path_1,'processed_waveforms')
+    with open(os.path.join(base_path_1, "metadata.json")) as f:
+        metadata1 = json.load(f)
+    good_units_index_1 = metadata1["good_ids"]
     good_units_files_1,good_units_indices_1 = select_good_units_files_indices(waveform_path_1, good_units_index_1)
     # second date
-    base_path_2 = os.path.join(base_path,mouse,probe,location,dates[1],exps[1])
-    waveform_path_2 = os.path.join(base_path_2,'RawWaveforms')
-    good_units_index_2 = read_good_id_from_mat(os.path.join(base_path_2, 'PreparedData.mat'))
+    base_path_2 = os.path.join(base_path,mouse,probe,location,exps[1])
+    waveform_path_2 = os.path.join(base_path_2,'processed_waveforms')
+    with open(os.path.join(base_path_1, "metadata.json")) as f:
+        metadata2 = json.load(f)
+    good_units_index_2 = metadata2["good_ids"]
     good_units_files_2,good_units_indices_2 = select_good_units_files_indices(waveform_path_2, good_units_index_2)
     print('day 1 len', len(good_units_files_1))
     print('day 2 len', len(good_units_files_2))
