@@ -66,7 +66,7 @@ def roc_curve_old(mt_path:str):
     plt.show()
 
 def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
-    thresh = dnn_dist.get_threshold(mt_path, False)
+    thresh = dnn_dist.get_threshold(mt_path, metric="DNNSim", vis=False)
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     mt = pd.read_csv(mt_path)
@@ -102,7 +102,7 @@ def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     plt.show()
 
 def roc_curve(mt_path:str):
-    thresh = dnn_dist.get_threshold(mt_path, False)
+    thresh = dnn_dist.get_threshold(mt_path, metric="DNNSim", vis=False)
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     mt = pd.read_csv(mt_path)
@@ -153,7 +153,7 @@ def roc_curve(mt_path:str):
 
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "wentao_model.csv")       # 2497 neurons
+mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path)
-# threshold_isi(mt_path, normalise=True, kde=True)
+# roc_curve(mt_path)
+threshold_isi(mt_path, normalise=True, kde=True)
