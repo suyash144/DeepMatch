@@ -12,8 +12,9 @@ import torch
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.join(os.pardir, os.pardir))
-    sys.path.insert(0, os.path.join(os.pardir))
-    from dnn import load_mouse_data, get_sim_matrix, get_prob_matrix, get_match_pair_prob,get_match_pair_sim
+    sys.path.insert(0, os.getcwd())
+    from dnn import load_mouse_data, get_sim_matrix_all, get_match_pair_above_SimThr
+    from testing.test import load_trained_model
 else:
     from track_analysis.dnn import load_mouse_data, get_sim_matrix, get_prob_matrix, get_match_pair_prob,get_match_pair_sim
 
@@ -113,10 +114,10 @@ def visualize_prob_matrix_raw(probs_matrix_1, probs_matrix_2, mouse, probe, loca
     plt.close()
 
 
-def save_filter_prediction_raw(pred_pairs,mouse,probe,location,dates,exps,session_pair):
+def save_filter_prediction_raw(pred_pairs,mouse,probe,location,exps,session_pair):
     base_path = os.path.join(os.getcwd(),os.pardir, os.pardir)
-    path_waveform_1 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, dates[0], exps[0],'RawWaveforms')
-    path_waveform_2 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, dates[1], exps[1],'RawWaveforms')
+    path_waveform_1 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, exps[0],'RawWaveforms')
+    path_waveform_2 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, exps[1],'RawWaveforms')
 
     # only keep pairs with max channel distance < 10
     pred_pairs_filtered = []
@@ -177,23 +178,35 @@ if __name__ == '__main__':
     # dates = ['2022-02-14','2022-02-15']
     # exps = ['exp1','exp1']
 
-    mouse = 'CB015'
+    mouse = 'AL036'
     session_pair = 1
-    probe = '19011110242'
-    location = '1'
+    probe = '19011116882'
+    location = '3'
     dates = ['2021-09-10', '2021-09-11']
-    exps = ['CB015_2021-09-10_NatImages_g0_t0-imec0-ap', 'CB015_2021-09-11_NatImages_g0_t0-imec0-ap']
+    # exps = ['CB015_2021-09-10_NatImages_g0_t0-imec0-ap', 'CB015_2021-09-11_NatImages_g0_t0-imec0-ap']
+    # exps = ['_2021-09-09_ephys__2021-09-09_NatImages_g0_PyKS_output', '_2021-09-10_ephys__2021-09-10_NatImages_g0_PyKS_output']
+    exps=['_2020-07-01_ephys__2020-07-01_stripe240_natIm_g0__2020-07-01_stripe240_natIm_g0_imec0_PyKS_output','_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output']
 
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exps)
-    waveform_day1_first_half, waveform_day1_second_half, waveform_day2_first_half, waveform_day2_second_half = get_representation_raw(good_units_files_1,good_units_files_2)
-    sim_matrix_12, sim_matrix_21 = get_sim_matrix(clip_loss,waveform_day1_first_half, waveform_day1_second_half, waveform_day2_first_half, waveform_day2_second_half)
-    probs_matrix_12, probs_matrix_21 = get_prob_matrix(clip_loss,waveform_day1_first_half, waveform_day1_second_half, waveform_day2_first_half, waveform_day2_second_half)
+    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps, "train")
+    waveform_day1_1, waveform_day1_2, waveform_day2_1, waveform_day2_2 = get_representation_raw(good_units_files_1,good_units_files_2)
+    model = load_trained_model("incl_AV008")
+    sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22 = get_sim_matrix_all(model(waveform_day1_1), model(waveform_day1_2), model(waveform_day2_1), model(waveform_day2_2))
+    # probs_matrix_12, probs_matrix_21 = get_prob_matrix(clip_loss,waveform_day1_first_half, waveform_day1_second_half, waveform_day2_first_half, waveform_day2_second_half)
 
-    visualize_sim_matrix_raw(sim_matrix_12, sim_matrix_21, mouse, probe, location, dates, exps)
-    visualize_prob_matrix_raw(probs_matrix_12, probs_matrix_21, mouse, probe, location, dates, exps)
+    # visualize_sim_matrix_raw(sim_matrix_12, sim_matrix_21, mouse, probe, location, dates, exps)
+    # visualize_prob_matrix_raw(probs_matrix_12, probs_matrix_21, mouse, probe, location, dates, exps)
 
     # match_pair = get_match_pair_prob(probs_matrix_12, probs_matrix_21, good_units_indices_1, good_units_indices_2, mouse, thr = 0.9)
-    match_pair = get_match_pair_sim(sim_matrix_12, sim_matrix_21, good_units_indices_1, good_units_indices_2, mouse, thr = 0.8)
+    day1_MaxSitepos, day2_MaxSitepos = np.empty((len(good_units_files_1), 2)), np.empty((len(good_units_files_2), 2))
+    for i, file in enumerate(good_units_files_1):
+        with h5py.File(file, 'r') as f:
+            msp = f["MaxSitepos"][()]
+            day1_MaxSitepos[i, :] = msp
+    for j, file in enumerate(good_units_files_2):
+        with h5py.File(file, 'r') as f:
+            msp = f["MaxSitepos"][()]
+            day2_MaxSitepos[j, :] = msp
+    match_pair = get_match_pair_above_SimThr(sim_matrix_12, sim_matrix_21, day1_MaxSitepos, day2_MaxSitepos, good_units_indices_1, good_units_indices_2, mouse, "incl_AV008", session_pair, thr = 0.8)
     match_pair = save_filter_prediction_raw(match_pair,mouse,probe,location,dates,exps,session_pair)
     
     # has_duplicate(match_pair[:,0])

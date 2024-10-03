@@ -425,8 +425,10 @@ if __name__ == '__main__':
     # dates = ['2020-08-04', '2020-08-05']
     # exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
     #         'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
-    exps = ["_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output",
-            "_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output"]
+    # exps = ["_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output",
+    #         "_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output"]
+    exps = ['_2020-07-01_ephys__2020-07-01_stripe240_natIm_g0__2020-07-01_stripe240_natIm_g0_imec0_PyKS_output',
+            "_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output"]
     session_pair = '2'
 
     print('mouse',mouse,'session_pair',session_pair)
@@ -509,8 +511,9 @@ if __name__ == '__main__':
     median_value_across_day = np.round(median_value_across_day,4)
     across_day_sim_thr = np.round(across_day_sim_thr,4)
     sim_value = np.round(sim_matrix_across_days[pair_index_1,pair_index_2],4) + 0.9
-    print('median_value_within_day',median_value_within_day)
-    print('within_day_sim_thr',within_day_sim_thr)
-    print('median_value_across_day',median_value_across_day)
-    print('across_day_sim_thr',across_day_sim_thr)
-    print('sim value of pair [132,139]',sim_value)
+    # print('median_value_within_day',median_value_within_day)
+    # print('within_day_sim_thr',within_day_sim_thr)
+    # print('median_value_across_day',median_value_across_day)
+    # print('across_day_sim_thr',across_day_sim_thr)
+    # print('sim value of pair [132,139]',sim_value)
+    print(pred_pairs)

@@ -10,7 +10,7 @@ import torch
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.join(os.pardir, os.pardir))
-    sys.path.insert(0, os.path.join(os.pardir))
+    sys.path.insert(0, os.getcwd())
 
 from utils.myutil import *
 

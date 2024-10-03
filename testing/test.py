@@ -15,7 +15,7 @@ import mat73
 from utils.myutil import get_exp_id, get_unit_id
 from scipy.special import softmax
 
-def load_trained_model(model_name:str, device):
+def load_trained_model(model_name:str, device="cpu"):
     # Load the trained model
     model = SpatioTemporalCNN_V2(n_channel=30,n_time=60,n_output=256).to(device)
     model = model.double()
