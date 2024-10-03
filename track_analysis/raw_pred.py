@@ -115,9 +115,9 @@ def visualize_prob_matrix_raw(probs_matrix_1, probs_matrix_2, mouse, probe, loca
 
 
 def save_filter_prediction_raw(pred_pairs,mouse,probe,location,exps,session_pair):
-    base_path = os.path.join(os.getcwd(),os.pardir, os.pardir)
-    path_waveform_1 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, exps[0],'RawWaveforms')
-    path_waveform_2 = os.path.join(base_path, 'test_ONE_DATA_UnitMatch', mouse, probe,location, exps[1],'RawWaveforms')
+    base_path = os.path.dirname(os.getcwd())
+    path_waveform_1 = os.path.join(base_path, 'R_DATA_UnitMatch', mouse, probe,location, exps[0],'processed_waveforms')
+    path_waveform_2 = os.path.join(base_path, 'R_DATA_UnitMatch', mouse, probe,location, exps[1],'processed_waveforms')
 
     # only keep pairs with max channel distance < 10
     pred_pairs_filtered = []
@@ -127,14 +127,14 @@ def save_filter_prediction_raw(pred_pairs,mouse,probe,location,exps,session_pair
         # unit_1_data = np.load(os.path.join(path_waveform_1, unit_1_name)) # (82,384,2)
         with h5py.File(neuron_file, 'r') as f:
             unit_1_data = f['waveform'][()]
-            unit_1_shank = f['shank'][()]
+            unit_1_shank = f['MaxSitepos'][()][0]
         
         unit_2_name = f"Unit{pair_indices[1]}_RawSpikes.npy"
         neuron_file = os.path.join(path_waveform_2, unit_2_name)
         # unit_2_data = np.load(os.path.join(path_waveform_2, unit_2_name)) # (82,384,2)
         with h5py.File(neuron_file, 'r') as f:
             unit_2_data = f['waveform'][()]
-            unit_2_shank = f['shank'][()]
+            unit_2_shank = f['MaxSitepos'][()][0]
             
         if unit_1_shank == unit_2_shank:
             pred_pairs_filtered.append(pair_indices)
@@ -207,7 +207,7 @@ if __name__ == '__main__':
             msp = f["MaxSitepos"][()]
             day2_MaxSitepos[j, :] = msp
     match_pair = get_match_pair_above_SimThr(sim_matrix_12, sim_matrix_21, day1_MaxSitepos, day2_MaxSitepos, good_units_indices_1, good_units_indices_2, mouse, "incl_AV008", session_pair, thr = 0.8)
-    match_pair = save_filter_prediction_raw(match_pair,mouse,probe,location,dates,exps,session_pair)
+    match_pair = save_filter_prediction_raw(match_pair,mouse,probe,location,exps,session_pair)
     
     # has_duplicate(match_pair[:,0])
     # has_duplicate(match_pair[:,1])
