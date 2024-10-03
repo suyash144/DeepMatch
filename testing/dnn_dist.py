@@ -25,6 +25,10 @@ def get_threshold(mt_path:str, metric:str="DNNSim", vis:bool=True):
 
     # Find the threshold where the distributions intersect
     thresh=np.argwhere(np.diff(np.sign(y_off - y_on)))
+    if len(thresh) > 1:
+        vis = True
+        print(thresh)
+        thresh = thresh[-1]
     print(f"Threshold: {metric} = {x[thresh].item()}")
 
     if vis:

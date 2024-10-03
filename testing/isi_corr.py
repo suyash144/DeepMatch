@@ -101,31 +101,44 @@ def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     plt.title("ISI correlation histogram")
     plt.show()
 
-def roc_curve(mt_path:str):
-    thresh = dnn_dist.get_threshold(mt_path, metric="DNNSim", vis=False)
+def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
+
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
+    
     mt = pd.read_csv(mt_path)
-    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
-    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
+    thresh = dnn_dist.get_threshold(mt_path, metric=dnn_metric, vis=False)
+    if um_metric=="MatchProb":
+        thresh_um=0.5
+    else:
+        thresh_um = dnn_dist.get_threshold(mt_path, metric=um_metric, vis=False)
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric]]          # Only keep within-day bits
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric]]                        # Only keep across-day bits
 
     # Correct for different median similarities between within- and across-day sets.
-    diff = np.median(within["DNNSim"]) - np.median(across["DNNSim"])
+    diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
     thresh = thresh - diff
 
-    matches_across = across.loc[mt["DNNSim"]>=thresh, ["ISICorr"]]
+    diff_um = np.median(within[um_metric])- np.median(across[um_metric])
+    thresh_um = thresh_um - diff_um
+
+    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr"]]
     non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), ["ISICorr"]]
     same_within = within.loc[(mt["ID1"]==mt["ID2"]), ["ISICorr"]]
+
+    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
 
     sorted_within = within.sort_values(by = "ISICorr", ascending=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
 
-    tp_g, fp_g, tp_r, fp_r = 0,0,0,0
+    tp_g, fp_g, tp_r, fp_r, tp_um, fp_um = 0,0,0,0,0,0
     N_w = len(non_matches)
     P_w = len(same_within)
     N_a = len(across) - len(matches_across)
     P_a = len(matches_across)
-    recall_g, fpr_g, recall_r, fpr_r = [], [], [], []
+    N_um = len(across) - len(um_matches)
+    P_um = len(um_matches)
+    recall_g, fpr_g, recall_r, fpr_r, recall_um, fpr_um = [], [], [], [], [], []
 
     for idx, row in sorted_within.iterrows():
         if row["ID1"]==row["ID2"]:
@@ -139,13 +152,21 @@ def roc_curve(mt_path:str):
             tp_r+=1
         else:
             fp_r+=1
+        if idx in um_matches.index:
+            tp_um += 1
+        else:
+            fp_um += 1
         recall_r.append(tp_r/P_a)
         fpr_r.append(fp_r/N_a)
+        recall_um.append(tp_um/P_um)
+        fpr_um.append(fp_um/N_um)
 
     plt.plot(fpr_g, recall_g, "g", label="Same units within days")
     print(f"Green AUC = {np.trapz(recall_g, fpr_g)}")
-    plt.plot(fpr_r, recall_r, "r", label="Matches across days")
+    plt.plot(fpr_r, recall_r, "r", label=f"Matches across days (as per DNN {dnn_metric})")
     print(f"Red AUC = {np.trapz(recall_r, fpr_r)}")
+    plt.plot(fpr_um, recall_um, "b", label=f"UnitMatch {um_metric}")
+    print(f"Blue AUC = {np.trapz(recall_um, fpr_um)}")
         
     plt.grid()
     plt.legend()
@@ -155,5 +176,5 @@ def roc_curve(mt_path:str):
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path)
-threshold_isi(mt_path, normalise=True, kde=True)
+roc_curve(mt_path, dnn_metric="DNNProb", um_metric="MatchProb")
+# threshold_isi(mt_path, normalise=True, kde=True)
