@@ -66,10 +66,10 @@ def roc_curve_old(mt_path:str):
     plt.show()
 
 def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
-    thresh = dnn_dist.get_threshold(mt_path, metric="DNNSim", vis=False)
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     mt = pd.read_csv(mt_path)
+    thresh = dnn_dist.get_threshold(mt, metric="DNNSim", vis=False)
     within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), ["DNNSim", "ISICorr", "ID1", "ID2"]]          # Only keep within-day bits
     across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), ["DNNSim", "ISICorr"]]                        # Only keep across-day bits
 
@@ -102,16 +102,23 @@ def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     plt.show()
 
 def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
+    """
+    dnn_metric can be "DNNSim" or "DNNProb".
+    um_metric can be "TotalScore", "MatchProb" or "ScoreExclCentroid".
+    """
 
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     
     mt = pd.read_csv(mt_path)
-    thresh = dnn_dist.get_threshold(mt_path, metric=dnn_metric, vis=False)
+    thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     if um_metric=="MatchProb":
         thresh_um=0.5
     else:
-        thresh_um = dnn_dist.get_threshold(mt_path, metric=um_metric, vis=False)
+        if um_metric=="ScoreExclCentroid":
+            col = mt.loc[:, "WavformSim":"LocTrajectorySim"]
+            mt[um_metric] = col.mean(axis=1)
+        thresh_um = dnn_dist.get_threshold(mt, metric=um_metric, vis=False)
     within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric]]          # Only keep within-day bits
     across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric]]                        # Only keep across-day bits
 
@@ -176,5 +183,5 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNProb", um_metric="MatchProb")
+roc_curve(mt_path, dnn_metric="DNNSim", um_metric="ScoreExclCentroid")
 # threshold_isi(mt_path, normalise=True, kde=True)

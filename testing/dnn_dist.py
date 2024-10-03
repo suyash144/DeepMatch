@@ -5,8 +5,7 @@ import pandas as pd
 from sklearn.neighbors import KernelDensity
 
 
-def get_threshold(mt_path:str, metric:str="DNNSim", vis:bool=True):
-    mt = pd.read_csv(mt_path)
+def get_threshold(mt:pd.DataFrame, metric:str="DNNSim", vis:bool=True):
     mt = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), :]              # Only use within day rows to compute threshold
 
     # On-diagonal means same neuron. Off-diagonal means different neurons.
@@ -76,6 +75,6 @@ if __name__ == "__main__":
 
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-
-    thresh = get_threshold(mt_path, vis=False)
+    mt = pd.read_csv(mt_path)
+    thresh = get_threshold(mt, vis=False)
     plot_hist(mt_path, thresh)
