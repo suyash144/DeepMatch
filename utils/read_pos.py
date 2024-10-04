@@ -2,7 +2,10 @@ import numpy as np
 import h5py
 import os
 import matplotlib.pyplot as plt
-from utils.myutil import get_unit_id
+if __name__=="__main__":
+    from myutil import get_unit_id
+else:
+    from utils.myutil import get_unit_id
 
 def read_pos(path):
     files = os.listdir(path)
@@ -13,7 +16,7 @@ def read_pos(path):
     for file in files:
         fp = os.path.join(path, file)
         with h5py.File(fp, 'r') as f:
-            waveform = f['waveform'][()] 
+            # waveform = f['waveform'][()] 
             MaxSitepos = f['MaxSitepos'][()]
         x.append(MaxSitepos[0])
         y.append(MaxSitepos[1])
@@ -28,4 +31,6 @@ if __name__=="__main__":
     dic = read_pos(path)
     plt.hist(dic["x"])
     plt.hist(dic["y"])
+    plt.show()
+    plt.scatter(dic["x"],dic["y"])
     plt.show()

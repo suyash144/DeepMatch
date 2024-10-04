@@ -1,12 +1,18 @@
 import numpy as np
 import pandas as pd
-import os
+import os, sys
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
 from sklearn.neighbors import KernelDensity
+import json
+import mat73
+if __name__ == '__main__':
+    sys.path.insert(0, os.getcwd())
 
-test_data_root = r"C:\Users\suyas\R_DATA_UnitMatch"
+from utils.myutil import get_exp_id
+from utils.read_pos import read_pos
+
 
 def compare_isi_with_dnnsim(mt_path:str):
     """
@@ -179,9 +185,61 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     plt.legend()
     plt.show()
 
+def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=100):
+    # Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
+    # Output is a reduced dataframe after filtering out matches that are spatially distant
+
+    # Once you have the exp_id, you can use utils.read_pos to get dict containing filename, x, y
+    sessions = set(matches["RecSes1"].unique())
+    sessions = sessions.union(set(matches["RecSes2"].unique()))
+
+    exp_folder = os.path.dirname(mt_path)
+    for file in os.listdir(exp_folder):
+        if not os.path.isdir(os.path.join(exp_folder, file)):
+            continue
+        else:
+            some_exp = os.path.join(exp_folder, file)
+            break
+    with open(os.path.join(some_exp, "metadata.json")) as f:
+        metadata = json.load(f)
+    
+    um_path = os.path.join(r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap", 
+                    metadata["mouse"], metadata["probe"], metadata["loc"], "UnitMatch", "UnitMatch.mat")
+    um = mat73.loadmat(um_path)
+    paths = um["UMparam"]["KSDir"]
+    exp_ids = {}
+    for recses in sessions:
+        exp_ids[recses] = get_exp_id(paths[recses-1], metadata["mouse"])
+    test_data_root = mt_path[:mt_path.find(metadata["mouse"])]
+    positions = {}
+    for recses, exp_id in exp_ids.items():
+        fp = os.path.join(test_data_root, metadata["mouse"], metadata["probe"], 
+                          metadata["loc"], exp_id, "processed_waveforms")
+        pos_dict = read_pos(fp)
+        positions[recses] = pd.DataFrame(pos_dict)
+    filtered_matches = matches
+    for idx, match in matches.iterrows():
+        r1 = match["RecSes1"]
+        r2 = match["RecSes2"]
+        id1 = match["ID1"]
+        id2 = match["ID2"]
+        pos1_df = positions[r1]
+        pos2_df = positions[r2]
+        pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
+        pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
+        dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
+        if dist > dist_thresh:
+            filtered_matches.drop(idx)
+    return filtered_matches
+
+test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNSim", um_metric="ScoreExclCentroid")
+# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="ScoreExclCentroid")
 # threshold_isi(mt_path, normalise=True, kde=True)
+mt = pd.read_csv(mt_path)
+across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
+matches_across = across.loc[mt["DNNSim"]>=0.8, :]
+spatial_filter(mt_path, matches_across, 100)
