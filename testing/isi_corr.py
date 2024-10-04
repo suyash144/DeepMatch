@@ -125,8 +125,8 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
             col = mt.loc[:, "WavformSim":"LocTrajectorySim"]
             mt[um_metric] = col.mean(axis=1)
         thresh_um = dnn_dist.get_threshold(mt, metric=um_metric, vis=False)
-    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric]]          # Only keep within-day bits
-    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric]]                        # Only keep across-day bits
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric]]                                              # Only keep within-day bits
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric, "RecSes1", "RecSes2", "ID1", "ID2"]]                        # Only keep across-day bits
 
     # Correct for different median similarities between within- and across-day sets.
     diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
@@ -135,11 +135,13 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     diff_um = np.median(within[um_metric])- np.median(across[um_metric])
     thresh_um = thresh_um - diff_um
 
-    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr"]]
+    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
     non_matches = within.loc[(mt["ID1"]!=mt["ID2"]), ["ISICorr"]]
     same_within = within.loc[(mt["ID1"]==mt["ID2"]), ["ISICorr"]]
 
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
+
+    matches_across = spatial_filter(mt_path, matches_across)
 
     sorted_within = within.sort_values(by = "ISICorr", ascending=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
@@ -185,7 +187,7 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     plt.legend()
     plt.show()
 
-def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=100):
+def spatial_filter(mt_path:str, matches:pd.DataFrame):
     # Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
     # Output is a reduced dataframe after filtering out matches that are spatially distant
 
@@ -228,18 +230,22 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=100):
         pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
         pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
         dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
-        if dist > dist_thresh:
-            filtered_matches.drop(idx)
-    return filtered_matches
+        filtered_matches.loc[idx, "dist"] = dist
+        # if dist > dist_thresh:
+        #     filtered_matches.drop(idx)
+    filtered_matches.sort_values(by = "dist", inplace=True)
+    return filtered_matches.head(len(filtered_matches)//2)
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="ScoreExclCentroid")
+roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
 # threshold_isi(mt_path, normalise=True, kde=True)
-mt = pd.read_csv(mt_path)
-across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
-matches_across = across.loc[mt["DNNSim"]>=0.8, :]
-spatial_filter(mt_path, matches_across, 100)
+# mt = pd.read_csv(mt_path)
+# across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
+# matches_across = across.loc[mt["DNNSim"]>=0.8, :]
+# print(len(matches_across))
+# filtered = spatial_filter(mt_path, matches_across)
+# print(len(filtered))
