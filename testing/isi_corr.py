@@ -232,25 +232,30 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
         pos2_df = positions[r2]
         pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
         pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
+        print(drift_correct(matches, positions, r1, r2))
         dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
         filtered_matches.loc[idx, "dist"] = dist
-        filtered_matches.loc[idx, "ydiff"] = pos1["y"].item() - pos2["y"].item()
-        filtered_matches.loc[idx, "xdiff"] = pos1["x"].item() - pos2["x"].item()
         if dist_thresh and dist > dist_thresh:
             filtered_matches.drop(idx)
-    plt.hist(filtered_matches["ydiff"], bins=100)
-    print(np.median(filtered_matches["ydiff"]))
-    plt.show()
     if not dist_thresh:
         filtered_matches.sort_values(by = "dist", inplace=True)
         return filtered_matches.head(len(filtered_matches)//2)
     else:
         return filtered_matches
 
+def drift_correct(matches, positions, recses1, recses2):
 
-def drift_correct(matches, pos1, pos2):
-    
-    y_diffs = np.array(pos2["y"]) - np.array(pos1["y"])
+    matches = matches.loc[(matches["RecSes1"]==recses1) & (matches["RecSes2"]==recses2),:]
+    pos1 = positions[recses1]
+    pos2 = positions[recses2]
+
+    y_diffs = []
+
+    for idx, row in matches.iterrows():
+        y1 = pos1.loc[pos1["file"]==row["ID1"],"y"]
+        y2 = pos2.loc[pos2["file"]==row["ID2"],"y"]
+        y_diffs.append(y2.item() - y1.item())
+
     return np.median(y_diffs)
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
@@ -264,5 +269,5 @@ mt = pd.read_csv(mt_path)
 across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
 matches_across = across.loc[mt["DNNSim"]>=0.8, :]
 print(len(matches_across))
-filtered = spatial_filter(mt_path, matches_across)
+filtered = spatial_filter(mt_path, matches_across, dist_thresh=100)
 print(len(filtered))
