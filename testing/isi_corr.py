@@ -141,7 +141,9 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
 
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
 
+    print("Spatial filtering...")
     matches_across = spatial_filter(mt_path, matches_across)
+    print("Filtered out bad matches (using drift corrected Euclidean distances)")
 
     sorted_within = within.sort_values(by = "ISICorr", ascending=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
@@ -223,17 +225,18 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
     filtered_matches = matches.copy()
-    correction_factors = drift_correct(matches, positions)
+    corrections = get_corrections(matches, positions)
     for idx, match in matches.iterrows():
-        r1 = match["RecSes1"]
-        r2 = match["RecSes2"]
-        id1 = match["ID1"]
-        id2 = match["ID2"]
-        pos1_df = positions[r1]
-        pos2_df = positions[r2]
-        pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
-        pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
-        dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
+        # r1 = match["RecSes1"]
+        # r2 = match["RecSes2"]
+        # id1 = match["ID1"]
+        # id2 = match["ID2"]
+        # pos1_df = positions[r1]
+        # pos2_df = positions[r2]
+        # pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
+        # pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
+        # dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
+        dist = drift_corrected_dist(corrections, positions, match)
         filtered_matches.loc[idx, "dist"] = dist
         if dist_thresh and dist > dist_thresh:
             filtered_matches.drop(idx)
@@ -243,14 +246,13 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
     else:
         return filtered_matches
 
-def drift_correct(matches, positions):
+def get_corrections(matches, positions):
 
     drift_correct_dict = {}
     drift_correct_dict["rec1"] = []
     drift_correct_dict["rec2"] = []
     drift_correct_dict["ydiff"] = []
-    
-    for idx, row in matches.iterrows():
+    for idx, row in tqdm(matches.iterrows(), desc="Building drift correction dataframe", total=len(matches)):
         recses1 = row["RecSes1"]
         recses2 = row["RecSes2"]
         pos1 = positions[recses1]
@@ -273,12 +275,22 @@ def drift_correct(matches, positions):
     drift_correct_dict["ydiff"] = medians
     return pd.DataFrame(drift_correct_dict)
 
-    # for idx, row in matches.iterrows():
-    #     y1 = pos1.loc[pos1["file"]==row["ID1"],"y"]
-    #     y2 = pos2.loc[pos2["file"]==row["ID2"],"y"]
-    #     y_diffs.append(y2.item() - y1.item())
+def drift_corrected_dist(corrections, positions, match, nocorr=False):
+    r1 = match["RecSes1"]
+    r2 = match["RecSes2"]
+    id1 = match["ID1"]
+    id2 = match["ID2"]
+    pos1_df = positions[r1]
+    pos2_df = positions[r2]
+    pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
+    pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
+    correction = corrections.loc[(corrections["rec1"]==r1) & (corrections["rec2"]==r2), "ydiff"]
+    y2 = pos2["y"].item() - correction
+    if nocorr:
+        y2 = pos2["y"].item()
+    dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
+    return dist.item()
 
-    # return np.median(y_diffs)
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
