@@ -187,11 +187,14 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     plt.legend()
     plt.show()
 
-def spatial_filter(mt_path:str, matches:pd.DataFrame):
-    # Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
-    # Output is a reduced dataframe after filtering out matches that are spatially distant
+def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
+    """
+    Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
+    Output is a reduced dataframe after filtering out matches that are spatially distant.
+    dist_thresh can take a numerical value, or set it to None to just reject the 50% of matches 
+    with greatest Euclidean distance.
+    """
 
-    # Once you have the exp_id, you can use utils.read_pos to get dict containing filename, x, y
     sessions = set(matches["RecSes1"].unique())
     sessions = sessions.union(set(matches["RecSes2"].unique()))
 
@@ -219,7 +222,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame):
                           metadata["loc"], exp_id, "processed_waveforms")
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
-    filtered_matches = matches
+    filtered_matches = matches.copy()
     for idx, match in matches.iterrows():
         r1 = match["RecSes1"]
         r2 = match["RecSes2"]
@@ -231,21 +234,35 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame):
         pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
         dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
         filtered_matches.loc[idx, "dist"] = dist
-        # if dist > dist_thresh:
-        #     filtered_matches.drop(idx)
-    filtered_matches.sort_values(by = "dist", inplace=True)
-    return filtered_matches.head(len(filtered_matches)//2)
+        filtered_matches.loc[idx, "ydiff"] = pos1["y"].item() - pos2["y"].item()
+        filtered_matches.loc[idx, "xdiff"] = pos1["x"].item() - pos2["x"].item()
+        if dist_thresh and dist > dist_thresh:
+            filtered_matches.drop(idx)
+    plt.hist(filtered_matches["ydiff"], bins=100)
+    print(np.median(filtered_matches["ydiff"]))
+    plt.show()
+    if not dist_thresh:
+        filtered_matches.sort_values(by = "dist", inplace=True)
+        return filtered_matches.head(len(filtered_matches)//2)
+    else:
+        return filtered_matches
+
+
+def drift_correct(matches, pos1, pos2):
+    
+    y_diffs = np.array(pos2["y"]) - np.array(pos1["y"])
+    return np.median(y_diffs)
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
+# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
 # threshold_isi(mt_path, normalise=True, kde=True)
-# mt = pd.read_csv(mt_path)
-# across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
-# matches_across = across.loc[mt["DNNSim"]>=0.8, :]
-# print(len(matches_across))
-# filtered = spatial_filter(mt_path, matches_across)
-# print(len(filtered))
+mt = pd.read_csv(mt_path)
+across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
+matches_across = across.loc[mt["DNNSim"]>=0.8, :]
+print(len(matches_across))
+filtered = spatial_filter(mt_path, matches_across)
+print(len(filtered))
