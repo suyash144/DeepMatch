@@ -223,6 +223,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
     filtered_matches = matches.copy()
+    correction_factors = drift_correct(matches, positions)
     for idx, match in matches.iterrows():
         r1 = match["RecSes1"]
         r2 = match["RecSes2"]
@@ -232,7 +233,6 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
         pos2_df = positions[r2]
         pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
         pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
-        print(drift_correct(matches, positions, r1, r2))
         dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
         filtered_matches.loc[idx, "dist"] = dist
         if dist_thresh and dist > dist_thresh:
@@ -243,20 +243,42 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
     else:
         return filtered_matches
 
-def drift_correct(matches, positions, recses1, recses2):
+def drift_correct(matches, positions):
 
-    matches = matches.loc[(matches["RecSes1"]==recses1) & (matches["RecSes2"]==recses2),:]
-    pos1 = positions[recses1]
-    pos2 = positions[recses2]
-
-    y_diffs = []
-
+    drift_correct_dict = {}
+    drift_correct_dict["rec1"] = []
+    drift_correct_dict["rec2"] = []
+    drift_correct_dict["ydiff"] = []
+    
     for idx, row in matches.iterrows():
-        y1 = pos1.loc[pos1["file"]==row["ID1"],"y"]
-        y2 = pos2.loc[pos2["file"]==row["ID2"],"y"]
-        y_diffs.append(y2.item() - y1.item())
+        recses1 = row["RecSes1"]
+        recses2 = row["RecSes2"]
+        pos1 = positions[recses1]
+        pos2 = positions[recses2]
+        y1 = pos1.loc[pos1["file"]==row["ID1"],"y"].item()
+        y2 = pos2.loc[pos2["file"]==row["ID2"],"y"].item()
+        dy = y2 - y1
+        df = pd.DataFrame(drift_correct_dict)
+        if sum((df["rec1"]==recses1) & (df["rec2"]==recses2)) > 0:
+            ydiffs = df.loc[(df["rec1"]==recses1) & (df["rec2"]==recses2), "ydiff"].item()
+            ydiffs.append(dy)
+            drift_correct_dict = df.to_dict(orient="list")
+        else:
+            drift_correct_dict["rec1"].append(recses1)
+            drift_correct_dict["rec2"].append(recses2)
+            drift_correct_dict["ydiff"].append([dy])
+    medians = [0] * len(drift_correct_dict["ydiff"])
+    for i, l in enumerate(drift_correct_dict["ydiff"]):
+        medians[i] = np.median(l)
+    drift_correct_dict["ydiff"] = medians
+    return pd.DataFrame(drift_correct_dict)
 
-    return np.median(y_diffs)
+    # for idx, row in matches.iterrows():
+    #     y1 = pos1.loc[pos1["file"]==row["ID1"],"y"]
+    #     y2 = pos2.loc[pos2["file"]==row["ID2"],"y"]
+    #     y_diffs.append(y2.item() - y1.item())
+
+    # return np.median(y_diffs)
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
