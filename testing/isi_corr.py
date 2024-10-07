@@ -107,16 +107,25 @@ def threshold_isi(mt_path:str, normalise:bool=True, kde:bool=False):
     plt.title("ISI correlation histogram")
     plt.show()
 
-def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
+def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore", 
+              filter=True, dist_thresh=None, dc=True, one_pair=False):
     """
     dnn_metric can be "DNNSim" or "DNNProb".
     um_metric can be "TotalScore", "MatchProb" or "ScoreExclCentroid".
+    filter is a bool that decides whether or not to do spatial filtering.
+    thresh sets the threshold for spatial filtering (or if None then just reject worse half of matches)
+    dc sets whether or not to do drift correction.
+    If one_pair is True then only uses one pair of consecutive recordings to generate the curve. 
+    Otherwise, uses all the pairs of recordings in the matchtable.
     """
 
     if not os.path.exists(mt_path):
         raise ValueError(f"Matchtable not found at {mt_path}")
     
     mt = pd.read_csv(mt_path)
+    if one_pair:
+        # To just test one pair of recordings on consecutive days:
+        mt = mt.loc[(mt["RecSes1"].isin([4,5])) & (mt["RecSes2"].isin([4,5])),:]
     thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     if um_metric=="MatchProb":
         thresh_um=0.5
@@ -141,11 +150,12 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
 
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
 
-    print("Spatial filtering...")
-    print(f"Matches before spatial filtering: {len(matches_across)}")
-    matches_across = spatial_filter(mt_path, matches_across)
-    print("Filtered out bad matches (using drift corrected Euclidean distances)")
-    print(f"Matches after spatial filtering: {len(matches_across)}")
+    if filter:
+        print("Spatial filtering...")
+        print(f"Matches before spatial filtering: {len(matches_across)}")
+        matches_across = spatial_filter(mt_path, matches_across, dist_thresh, dc)
+        print("Filtered out bad matches (using Euclidean distances)")
+        print(f"Matches after spatial filtering: {len(matches_across)}")
 
     sorted_within = within.sort_values(by = "ISICorr", ascending=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
@@ -191,7 +201,7 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     plt.legend()
     plt.show()
 
-def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
+def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True):
     """
     Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
     Output is a reduced dataframe after filtering out matches that are spatially distant.
@@ -227,9 +237,13 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
     filtered_matches = matches.copy()
-    corrections = get_corrections(matches, positions)
+    if drift_corr:
+        corrections = get_corrections(matches, positions)
     for idx, match in matches.iterrows():
-        dist = drift_corrected_dist(corrections, positions, match)
+        if drift_corr:
+            dist = drift_corrected_dist(corrections, positions, match)
+        else:
+            dist = drift_corrected_dist(None, positions, match, True)
         filtered_matches.loc[idx, "dist"] = dist
         if dist_thresh and dist > dist_thresh:
             filtered_matches.drop(idx, inplace=True)
@@ -290,13 +304,16 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
     return dist.item()
 
+# def visualise_drift_correction(corrections):
+#     for 
+
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
+roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=True, filter=False, dc=False)
 # threshold_isi(mt_path, normalise=True, kde=True)
 # mt = pd.read_csv(mt_path)
 # across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
