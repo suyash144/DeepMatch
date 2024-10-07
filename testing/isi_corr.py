@@ -153,7 +153,7 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore",
     if filter:
         print("Spatial filtering...")
         print(f"Matches before spatial filtering: {len(matches_across)}")
-        matches_across = spatial_filter(mt_path, matches_across, dist_thresh, dc)
+        matches_across = spatial_filter(mt_path, matches_across, dist_thresh, dc, not one_pair)
         print("Filtered out bad matches (using Euclidean distances)")
         print(f"Matches after spatial filtering: {len(matches_across)}")
 
@@ -232,7 +232,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
-    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, drift_corr=False)
+    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
 
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
@@ -259,7 +259,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     um_auc = np.trapz(recall_um, fpr_um)
     return dnn_auc, um_auc
 
-def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True):
+def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
     """
     Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
     Output is a reduced dataframe after filtering out matches that are spatially distant.
@@ -297,7 +297,8 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     filtered_matches = matches.copy()
     if drift_corr:
         corrections = get_corrections(matches, positions)
-        visualise_drift_correction(corrections, exp_ids, drift_corr)
+        if plot_drift:
+            days, drift = visualise_drift_correction(corrections, exp_ids, plot_drift)
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
@@ -363,7 +364,7 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
     return dist.item()
 
-def visualise_drift_correction(corrections, exp_ids):
+def visualise_drift_correction(corrections, exp_ids, vis):
     c = corrections[corrections["rec1"]==1]
     c = c.sort_values(by = "rec2")
     date0 = exp_id_to_date(exp_ids[1])
@@ -374,10 +375,12 @@ def visualise_drift_correction(corrections, exp_ids):
         delta = (date - date0).days
         delta_days.append(delta)
 
-    plt.plot(delta_days, c["ydiff"])
-    plt.xlabel("Days since first recording at this location")
-    plt.ylabel("Drift")
-    plt.show()
+    if vis:
+        plt.plot(delta_days, c["ydiff"])
+        plt.xlabel("Days since first recording at this location")
+        plt.ylabel("Drift")
+        plt.show()
+    return delta_days, c["ydiff"].values
 
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
@@ -385,7 +388,7 @@ test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=False, filter=True, dc=True)
+# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=True, filter=True, dc=True)
 # threshold_isi(mt_path, normalise=True, kde=True)
 mt = pd.read_csv(mt_path)
 
