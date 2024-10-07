@@ -10,7 +10,7 @@ import mat73
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
 
-from utils.myutil import get_exp_id
+from utils.myutil import get_exp_id, exp_id_to_date
 from utils.read_pos import read_pos
 
 
@@ -239,6 +239,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     filtered_matches = matches.copy()
     if drift_corr:
         corrections = get_corrections(matches, positions)
+        visualise_drift_correction(corrections, exp_ids)
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
@@ -304,8 +305,21 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
     return dist.item()
 
-# def visualise_drift_correction(corrections):
-#     for 
+def visualise_drift_correction(corrections, exp_ids):
+    c = corrections[corrections["rec1"]==1]
+    c = c.sort_values(by = "rec2")
+    date0 = exp_id_to_date(exp_ids[1])
+    delta_days = []
+    for idx, row in c.iterrows():
+        id = exp_ids[row["rec2"]]
+        date = exp_id_to_date(id)
+        delta = (date - date0).days
+        delta_days.append(delta)
+
+    plt.plot(delta_days, c["ydiff"])
+    plt.xlabel("Days since first recording at this location")
+    plt.ylabel("Drift")
+    plt.show()
 
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
@@ -313,7 +327,7 @@ test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=True, filter=False, dc=False)
+roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=False, filter=True, dc=True)
 # threshold_isi(mt_path, normalise=True, kde=True)
 # mt = pd.read_csv(mt_path)
 # across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 

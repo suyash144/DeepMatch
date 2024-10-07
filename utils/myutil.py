@@ -6,7 +6,7 @@ import math,random
 import re
 import matplotlib.pyplot as plt
 import json
-
+import datetime
 
 def is_date_filename(filename):
     # Define a regular expression pattern for the date format
@@ -322,3 +322,10 @@ def get_unit_id(filepath:str):
     else:
         raise ValueError(f"Invalid filepath format for this waveform: {filepath}", 
                          "Filename for waveform XX should be UnitXX_RawSpikes.npy")
+    
+def exp_id_to_date(exp_id:str):
+    date = exp_id[1:]
+    date = date[:date.find("_")]
+    l = date.split("-")
+    date = datetime.date(int(l[0]), int(l[1]), int(l[2]))
+    return date
