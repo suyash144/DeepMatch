@@ -190,21 +190,19 @@ if __name__ == '__main__':
     # rec2 = r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\_2022-03-22_ephys__2022-03-22_SparseNoiseNaturalImages_g0__2022-03-22_SparseNoiseNaturalImages_g0_imec0_pyKS_output"
     
     # to test on one specific PAIR of recordings
-    inference_one_pair(rec1, rec2, model_name = "incl_AV008")
+    # inference_one_pair(rec1, rec2, model_name = "incl_AV008")
 
     # to test on one specific SET of recordings (ie one group with same (mouse, probe, loc))
-    # inference(base, "AL031", "19011116684", "1", "test")
+    # inference(base, "AV008", "Probe0", "IMRO_14", "incl_AV008")
 
     # to test on ALL sets of recordings
-    # mice = os.listdir(base)
-    # for mouse in mice:
-    #     if mouse=="AV008":
-    #         continue
-    #     name_path = os.path.join(base, mouse)
-    #     probes = os.listdir(name_path)
-    #     for probe in probes:
-    #         name_probe = os.path.join(name_path, probe)
-    #         locations = os.listdir(name_probe)
-    #         for location in locations:
-    #             name_probe_location = os.path.join(name_probe, location)
-    #             inference(base, mouse, probe, location, "test")
+    mice = os.listdir(base)
+    for mouse in mice:
+        name_path = os.path.join(base, mouse)
+        probes = os.listdir(name_path)
+        for probe in probes:
+            name_probe = os.path.join(name_path, probe)
+            locations = os.listdir(name_probe)
+            for location in locations:
+                name_probe_location = os.path.join(name_probe, location)
+                inference(base, mouse, probe, location, "incl_AV008")

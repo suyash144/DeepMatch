@@ -4,6 +4,7 @@ import os, sys
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
+import seaborn as sns
 from sklearn.neighbors import KernelDensity
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
@@ -371,7 +372,7 @@ def auc_over_days(mt_path:str):
     exp_ids,_ = mtpath_to_expids(mt_path, mt)
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
-            if r1==r2:
+            if r1>=r2:
                 continue
             dnn, um = auc_one_pair(mt, r1, r2)
             dnn_auc.append(dnn)
@@ -379,11 +380,15 @@ def auc_over_days(mt_path:str):
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             delta_days.append((date2-date1).days)
-    plt.plot(delta_days, dnn_auc, "r", label="DNN")
-    plt.plot(delta_days, um_auc, "b", label="UM")
+    plt.scatter(delta_days, dnn_auc, c="r", label="DNN")
+    plt.scatter(delta_days, um_auc, c="b", label="UM")
     plt.xlabel("Delta days")
     plt.ylabel("AUC")
+    plt.legend()
+    sns.regplot(x = delta_days, y = dnn_auc, label="DNN", color="r")
+    sns.regplot(x = delta_days, y = um_auc, label="UM", color="b")
     plt.show()
+    return delta_days, dnn_auc, um_auc
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
@@ -392,8 +397,11 @@ mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchta
 # compare_isi_with_dnnsim(mt_path)
 # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=True, filter=True, dc=True)
 # threshold_isi(mt_path, normalise=True, kde=True)
-mt = pd.read_csv(mt_path)
+# mt = pd.read_csv(mt_path)
 
 # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
 # print(dnn_auc, um_auc)
-auc_over_days(mt_path)
+days, dnn, um = auc_over_days(mt_path)
+print(days)
+print(dnn)
+print(um)
