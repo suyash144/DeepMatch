@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
 import seaborn as sns
+from scipy.stats import linregress
 from sklearn.neighbors import KernelDensity
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
@@ -365,7 +366,7 @@ def visualise_drift_correction(corrections, exp_ids, vis):
         plt.show()
     return delta_days, c["ydiff"].values
 
-def auc_over_days(mt_path:str):
+def auc_over_days(mt_path:str, vis:bool):
     mt = pd.read_csv(mt_path)
     sessions = set(mt["RecSes1"].unique())
     dnn_auc, um_auc, delta_days = [], [], []
@@ -380,15 +381,18 @@ def auc_over_days(mt_path:str):
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             delta_days.append((date2-date1).days)
-    plt.scatter(delta_days, dnn_auc, c="r", label="DNN")
-    plt.scatter(delta_days, um_auc, c="b", label="UM")
-    plt.xlabel("Delta days")
-    plt.ylabel("AUC")
-    plt.legend()
-    sns.regplot(x = delta_days, y = dnn_auc, label="DNN", color="r")
-    sns.regplot(x = delta_days, y = um_auc, label="UM", color="b")
-    plt.show()
-    return delta_days, dnn_auc, um_auc
+    if vis:
+        plt.scatter(delta_days, dnn_auc, c="r", label="DNN")
+        plt.scatter(delta_days, um_auc, c="b", label="UM")
+        plt.xlabel("Delta days")
+        plt.ylabel("AUC")
+        plt.legend()
+        sns.regplot(x = delta_days, y = dnn_auc, label="DNN", color="r")
+        sns.regplot(x = delta_days, y = um_auc, label="UM", color="b")
+        plt.show()
+    dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days, dnn_auc)
+    um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days, um_auc)
+    return dnn_slope, dnn_intercept, um_slope, um_intercept
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
@@ -401,7 +405,7 @@ mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchta
 
 # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
 # print(dnn_auc, um_auc)
-days, dnn, um = auc_over_days(mt_path)
-print(days)
-print(dnn)
-print(um)
+
+# Loop through all paths to match tables and collect the parameters...
+# Get out the y = ax + b parameters 
+dnn_a, dnn_b, um_a, um_b = auc_over_days(mt_path, vis=False)
