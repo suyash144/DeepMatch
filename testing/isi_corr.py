@@ -142,8 +142,10 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore"):
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
 
     print("Spatial filtering...")
+    print(f"Matches before spatial filtering: {len(matches_across)}")
     matches_across = spatial_filter(mt_path, matches_across)
     print("Filtered out bad matches (using drift corrected Euclidean distances)")
+    print(f"Matches after spatial filtering: {len(matches_across)}")
 
     sorted_within = within.sort_values(by = "ISICorr", ascending=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
@@ -227,19 +229,10 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None):
     filtered_matches = matches.copy()
     corrections = get_corrections(matches, positions)
     for idx, match in matches.iterrows():
-        # r1 = match["RecSes1"]
-        # r2 = match["RecSes2"]
-        # id1 = match["ID1"]
-        # id2 = match["ID2"]
-        # pos1_df = positions[r1]
-        # pos2_df = positions[r2]
-        # pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
-        # pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
-        # dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - pos2["y"].item())**2)
         dist = drift_corrected_dist(corrections, positions, match)
         filtered_matches.loc[idx, "dist"] = dist
         if dist_thresh and dist > dist_thresh:
-            filtered_matches.drop(idx)
+            filtered_matches.drop(idx, inplace=True)
     if not dist_thresh:
         filtered_matches.sort_values(by = "dist", inplace=True)
         return filtered_matches.head(len(filtered_matches)//2)
@@ -276,6 +269,11 @@ def get_corrections(matches, positions):
     return pd.DataFrame(drift_correct_dict)
 
 def drift_corrected_dist(corrections, positions, match, nocorr=False):
+    """
+    Returns Euclidean distance between two neurons in a pair.
+    If nocorr is set to True, it does no drift correction.
+    By default, nocorr is False so we do drift correction.
+    """
     r1 = match["RecSes1"]
     r2 = match["RecSes2"]
     id1 = match["ID1"]
@@ -284,10 +282,11 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     pos2_df = positions[r2]
     pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
     pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
-    correction = corrections.loc[(corrections["rec1"]==r1) & (corrections["rec2"]==r2), "ydiff"]
-    y2 = pos2["y"].item() - correction
     if nocorr:
         y2 = pos2["y"].item()
+    else:
+        correction = corrections.loc[(corrections["rec1"]==r1) & (corrections["rec2"]==r2), "ydiff"]
+        y2 = pos2["y"].item() - correction
     dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
     return dist.item()
 
@@ -297,11 +296,11 @@ test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
+roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb")
 # threshold_isi(mt_path, normalise=True, kde=True)
-mt = pd.read_csv(mt_path)
-across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
-matches_across = across.loc[mt["DNNSim"]>=0.8, :]
-print(len(matches_across))
-filtered = spatial_filter(mt_path, matches_across, dist_thresh=100)
-print(len(filtered))
+# mt = pd.read_csv(mt_path)
+# across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
+# matches_across = across.loc[mt["DNNSim"]>=0.8, :]
+# print(len(matches_across))
+# filtered = spatial_filter(mt_path, matches_across, dist_thresh=100)
+# print(len(filtered))
