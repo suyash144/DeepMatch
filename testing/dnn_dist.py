@@ -16,8 +16,8 @@ def get_threshold(mt:pd.DataFrame, metric:str="DNNSim", vis:bool=True):
     assert sum(on_diag.index.isin(off_diag.index)) == 0
 
     # Kernel density estimation (distributions are more useful than histograms)
-    kde_on = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(on_diag)
-    kde_off = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(off_diag)
+    kde_on = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(on_diag.values)
+    kde_off = KernelDensity(kernel='gaussian', bandwidth=0.01).fit(off_diag.values)
     x = np.linspace(min(off_diag[metric]), max(on_diag[metric]), 1000).reshape(-1, 1)
     y_on = np.exp(kde_on.score_samples(x))
     y_off = np.exp(kde_off.score_samples(x))
@@ -25,13 +25,11 @@ def get_threshold(mt:pd.DataFrame, metric:str="DNNSim", vis:bool=True):
     # Find the threshold where the distributions intersect
     thresh=np.argwhere(np.diff(np.sign(y_off - y_on)))
     if len(thresh) > 1:
-        vis = True
-        print(thresh)
         thresh = thresh[-1]
-    print(f"Threshold: {metric} = {x[thresh].item()}")
 
     if vis:
         # visualise the results
+        print(f"Threshold: {metric} = {x[thresh].item()}")
         plt.hist(on_diag[metric], bins = 500, alpha = 0.5, density=True, label="On diagonal")
         plt.hist(off_diag[metric], bins = 500, alpha = 0.5, density=True, label="Off diagonal")
         plt.plot(x, y_on, label="On diagonal")

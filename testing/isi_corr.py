@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
 from sklearn.neighbors import KernelDensity
-import json
-import mat73
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
 
@@ -202,7 +200,7 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore",
     plt.show()
 
 def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
-                 um_metric:str="TotalScore", dist_thresh=None):
+                 um_metric:str="MatchProb", dist_thresh=None):
     """
     Returns the AUC figures for DNN and UnitMatch when comparing across a pair of sessions.
     rec1 and rec2 are the RecSes IDs we want to compare.
@@ -300,7 +298,10 @@ def get_corrections(matches, positions):
     drift_correct_dict["rec1"] = []
     drift_correct_dict["rec2"] = []
     drift_correct_dict["ydiff"] = []
-    for idx, row in tqdm(matches.iterrows(), desc="Building drift correction dataframe", total=len(matches)):
+    # two versions - use top if running drift correction once over the whole matchtable.
+    # if running drift correction separately for each session pair, use bottom one to avoid crowding terminal.
+    # for idx, row in tqdm(matches.iterrows(), desc="Building drift correction dataframe", total=len(matches)):
+    for idx, row in matches.iterrows():
         recses1 = row["RecSes1"]
         recses2 = row["RecSes2"]
         pos1 = positions[recses1]
@@ -363,6 +364,26 @@ def visualise_drift_correction(corrections, exp_ids, vis):
         plt.show()
     return delta_days, c["ydiff"].values
 
+def auc_over_days(mt_path:str):
+    mt = pd.read_csv(mt_path)
+    sessions = set(mt["RecSes1"].unique())
+    dnn_auc, um_auc, delta_days = [], [], []
+    exp_ids,_ = mtpath_to_expids(mt_path, mt)
+    for r1 in tqdm(sessions):
+        for r2 in tqdm(sessions):
+            if r1==r2:
+                continue
+            dnn, um = auc_one_pair(mt, r1, r2)
+            dnn_auc.append(dnn)
+            um_auc.append(um)
+            date1 = exp_id_to_date(exp_ids[r1])
+            date2 = exp_id_to_date(exp_ids[r2])
+            delta_days.append((date2-date1).days)
+    plt.plot(delta_days, dnn_auc, "r", label="DNN")
+    plt.plot(delta_days, um_auc, "b", label="UM")
+    plt.xlabel("Delta days")
+    plt.ylabel("AUC")
+    plt.show()
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
@@ -373,14 +394,6 @@ mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchta
 # threshold_isi(mt_path, normalise=True, kde=True)
 mt = pd.read_csv(mt_path)
 
-dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
-print(dnn_auc, um_auc)
-
-# sessions = set(mt["RecSes1"].unique())
-
-# for r1 in sessions:
-#     for r2 in sessions:
-#         dnn_auc, um_auc = auc_one_pair(mt, r1, r2)
-
-# dnn_auc = []
-# um_auc = []
+# dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
+# print(dnn_auc, um_auc)
+auc_over_days(mt_path)
