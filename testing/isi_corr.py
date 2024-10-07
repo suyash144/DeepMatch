@@ -10,7 +10,7 @@ import mat73
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
 
-from utils.myutil import get_exp_id, exp_id_to_date
+from utils.myutil import get_exp_id, exp_id_to_date, mtpath_to_expids
 from utils.read_pos import read_pos
 
 
@@ -267,26 +267,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     with greatest Euclidean distance.
     """
 
-    sessions = set(matches["RecSes1"].unique())
-    sessions = sessions.union(set(matches["RecSes2"].unique()))
-
-    exp_folder = os.path.dirname(mt_path)
-    for file in os.listdir(exp_folder):
-        if not os.path.isdir(os.path.join(exp_folder, file)):
-            continue
-        else:
-            some_exp = os.path.join(exp_folder, file)
-            break
-    with open(os.path.join(some_exp, "metadata.json")) as f:
-        metadata = json.load(f)
-    
-    um_path = os.path.join(r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap", 
-                    metadata["mouse"], metadata["probe"], metadata["loc"], "UnitMatch", "UnitMatch.mat")
-    um = mat73.loadmat(um_path)
-    paths = um["UMparam"]["KSDir"]
-    exp_ids = {}
-    for recses in sessions:
-        exp_ids[recses] = get_exp_id(paths[recses-1], metadata["mouse"])
+    exp_ids, metadata = mtpath_to_expids(mt_path, matches)
     test_data_root = mt_path[:mt_path.find(metadata["mouse"])]
     positions = {}
     for recses, exp_id in exp_ids.items():
@@ -392,5 +373,14 @@ mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchta
 # threshold_isi(mt_path, normalise=True, kde=True)
 mt = pd.read_csv(mt_path)
 
-dnn_auc, um_auc = auc_one_pair(mt, 1,2)
+dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
 print(dnn_auc, um_auc)
+
+# sessions = set(mt["RecSes1"].unique())
+
+# for r1 in sessions:
+#     for r2 in sessions:
+#         dnn_auc, um_auc = auc_one_pair(mt, r1, r2)
+
+# dnn_auc = []
+# um_auc = []

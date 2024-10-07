@@ -7,6 +7,8 @@ import re
 import matplotlib.pyplot as plt
 import json
 import datetime
+import pandas as pd
+import mat73
 
 def is_date_filename(filename):
     # Define a regular expression pattern for the date format
@@ -329,3 +331,27 @@ def exp_id_to_date(exp_id:str):
     l = date.split("-")
     date = datetime.date(int(l[0]), int(l[1]), int(l[2]))
     return date
+
+def mtpath_to_expids(mt_path:str, matches:pd.DataFrame):
+
+    sessions = set(matches["RecSes1"].unique())
+    sessions = sessions.union(set(matches["RecSes2"].unique()))
+    
+    exp_folder = os.path.dirname(mt_path)
+    for file in os.listdir(exp_folder):
+        if not os.path.isdir(os.path.join(exp_folder, file)):
+            continue
+        else:
+            some_exp = os.path.join(exp_folder, file)
+            break
+    with open(os.path.join(some_exp, "metadata.json")) as f:
+        metadata = json.load(f)
+    
+    um_path = os.path.join(r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap", 
+                    metadata["mouse"], metadata["probe"], metadata["loc"], "UnitMatch", "UnitMatch.mat")
+    um = mat73.loadmat(um_path)
+    paths = um["UMparam"]["KSDir"]
+    exp_ids = {}
+    for recses in sessions:
+        exp_ids[recses] = get_exp_id(paths[recses-1], metadata["mouse"])
+    return exp_ids, metadata
