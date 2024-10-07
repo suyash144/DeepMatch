@@ -201,6 +201,64 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore",
     plt.legend()
     plt.show()
 
+def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
+                 um_metric:str="TotalScore", dist_thresh=None):
+    """
+    Returns the AUC figures for DNN and UnitMatch when comparing across a pair of sessions.
+    rec1 and rec2 are the RecSes IDs we want to compare.
+    dnn_metric can be "DNNSim" or "DNNProb".
+    um_metric can be "TotalScore", "MatchProb" or "ScoreExclCentroid".
+    thresh sets the threshold for spatial filtering (or if None then just reject worse half of matches)
+    """
+
+    mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
+    thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
+    if um_metric=="MatchProb":
+        thresh_um=0.5
+    else:
+        if um_metric=="ScoreExclCentroid":
+            col = mt.loc[:, "WavformSim":"LocTrajectorySim"]
+            mt[um_metric] = col.mean(axis=1)
+        thresh_um = dnn_dist.get_threshold(mt, metric=um_metric, vis=False)
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric]]                                              # Only keep within-day bits
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric, "RecSes1", "RecSes2", "ID1", "ID2"]]                        # Only keep across-day bits
+
+    # Correct for different median similarities between within- and across-day sets.
+    diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
+    thresh = thresh - diff
+
+    diff_um = np.median(within[um_metric]) - np.median(across[um_metric])
+    thresh_um = thresh_um - diff_um
+
+    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
+    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, drift_corr=False)
+    sorted_across = across.sort_values(by = "ISICorr", ascending=False)
+
+    tp_r, fp_r, tp_um, fp_um = 0,0,0,0
+    N_a = len(across) - len(matches_across)
+    P_a = len(matches_across)
+    N_um = len(across) - len(um_matches)
+    P_um = len(um_matches)
+    recall_r, fpr_r, recall_um, fpr_um = [], [], [], []
+
+    for idx, row in sorted_across.iterrows():
+        if idx in matches_across.index:
+            tp_r+=1
+        else:
+            fp_r+=1
+        if idx in um_matches.index:
+            tp_um += 1
+        else:
+            fp_um += 1
+        recall_r.append(tp_r/P_a)
+        fpr_r.append(fp_r/N_a)
+        recall_um.append(tp_um/P_um)
+        fpr_um.append(fp_um/N_um)
+    dnn_auc = np.trapz(recall_r, fpr_r)
+    um_auc = np.trapz(recall_um, fpr_um)
+    return dnn_auc, um_auc
+
 def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True):
     """
     Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
@@ -239,7 +297,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     filtered_matches = matches.copy()
     if drift_corr:
         corrections = get_corrections(matches, positions)
-        visualise_drift_correction(corrections, exp_ids)
+        visualise_drift_correction(corrections, exp_ids, drift_corr)
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
@@ -327,11 +385,9 @@ test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
 mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
 # compare_isi_with_dnnsim(mt_path)
-roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=False, filter=True, dc=True)
+# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=False, filter=True, dc=True)
 # threshold_isi(mt_path, normalise=True, kde=True)
-# mt = pd.read_csv(mt_path)
-# across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]),:] 
-# matches_across = across.loc[mt["DNNSim"]>=0.8, :]
-# print(len(matches_across))
-# filtered = spatial_filter(mt_path, matches_across, dist_thresh=100)
-# print(len(filtered))
+mt = pd.read_csv(mt_path)
+
+dnn_auc, um_auc = auc_one_pair(mt, 1,2)
+print(dnn_auc, um_auc)
