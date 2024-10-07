@@ -275,6 +275,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
                           metadata["loc"], exp_id, "processed_waveforms")
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
+    # plot_distances(matches, positions)
     filtered_matches = matches.copy()
     if drift_corr:
         corrections = get_corrections(matches, positions)
@@ -393,6 +394,14 @@ def auc_over_days(mt_path:str, vis:bool):
     dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days, dnn_auc)
     um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days, um_auc)
     return dnn_slope, dnn_intercept, um_slope, um_intercept
+
+def plot_distances(matches:pd.DataFrame, positions):
+    dists = []
+    for idx, row in matches.iterrows():
+        dist = drift_corrected_dist(None, positions, row, True)
+        dists.append(dist)
+    plt.hist(dists, bins = 100)
+    plt.show()
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
 # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
