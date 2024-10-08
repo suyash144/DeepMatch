@@ -202,7 +202,7 @@ def roc_curve(mt_path:str, dnn_metric:str="DNNSim", um_metric:str="TotalScore",
     plt.show()
 
 def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
-                 um_metric:str="MatchProb", dist_thresh=None):
+                 um_metric:str="MatchProb", dist_thresh=None, mt_path=None):
     """
     Returns the AUC figures for DNN and UnitMatch when comparing across a pair of sessions.
     rec1 and rec2 are the RecSes IDs we want to compare.
@@ -275,12 +275,12 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
                           metadata["loc"], exp_id, "processed_waveforms")
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
-    # plot_distances(matches, positions)
     filtered_matches = matches.copy()
     if drift_corr:
         corrections = get_corrections(matches, positions)
         if plot_drift:
             days, drift = visualise_drift_correction(corrections, exp_ids, plot_drift)
+    # plot_distances(matches, positions, corrections=corrections)
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
@@ -395,26 +395,68 @@ def auc_over_days(mt_path:str, vis:bool):
     um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days, um_auc)
     return dnn_slope, dnn_intercept, um_slope, um_intercept
 
-def plot_distances(matches:pd.DataFrame, positions):
+def plot_distances(matches:pd.DataFrame, positions, rec1=None, rec2=None, corrections=None):
+    if corrections is None:
+        nocorr= True
+    else:
+        nocorr = False
     dists = []
+    if rec1 is not None:
+        matches = matches.loc[matches["RecSes1"].isin([rec1,rec2]) & matches["RecSes2"].isin([rec1,rec2]),:]
     for idx, row in matches.iterrows():
-        dist = drift_corrected_dist(None, positions, row, True)
+        dist = drift_corrected_dist(corrections, positions, row, nocorr)
         dists.append(dist)
-    plt.hist(dists, bins = 100)
+    # plt.hist(dists, bins = 100)
+    # plt.show()
+    return dists
+
+def plot_dist_thresh(mt_path, matches:pd.DataFrame, positions, corrections):
+    match = matches.sample(1)
+    mt = pd.read_csv(mt_path)
+
+    # thresholds = [10,50,100,150,200,250]
+    thresholds = [100]
+
+    dists = []
+    dists_dc = []
+
+    fig, axs = plt.subplots(nrows=1, ncols=3)
+    i = 0
+    r1 = match["RecSes1"].item()
+    r2 = match["RecSes2"].item()
+    dists.append(plot_distances(matches, positions, r1, r2, None))
+    dists_dc.append(plot_distances(matches, positions, r1, r2, corrections))
+    aucs = []
+    print("got to here")
+    for t in tqdm(thresholds):
+        dnn, um = auc_one_pair(mt, r1, r2, dist_thresh=t)
+        aucs.append(dnn)
+        print("done one threshold")
+    axs[i,0].hist(dists)
+    axs[i,0].set_title("Distance histogram of matches")
+    axs[i,1].hist(dists_dc)
+    axs[i,1].set_title("After drift correction")
+    axs[i,2].plot(thresholds, aucs, color = "r", label="DNN AUCs")
+    axs[i,2].axhline(um, label="UnitMatch AUC", color="b")
+    axs[i,2].set_title("AUCs over varying distance thresholds")
+    i +=1
+    print("finished making plots")
     plt.show()
 
-test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
-# mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-# mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-# compare_isi_with_dnnsim(mt_path)
-# roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", one_pair=True, filter=True, dc=True)
-# threshold_isi(mt_path, normalise=True, kde=True)
-# mt = pd.read_csv(mt_path)
 
-# dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
-# print(dnn_auc, um_auc)
+if __name__ == "__main__":
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
+    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
+    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+    # compare_isi_with_dnnsim(mt_path)
+    # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
+    # threshold_isi(mt_path, normalise=True, kde=True)
+    # mt = pd.read_csv(mt_path)
 
-# Loop through all paths to match tables and collect the parameters...
-# Get out the y = ax + b parameters 
-dnn_a, dnn_b, um_a, um_b = auc_over_days(mt_path, vis=False)
+    # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
+    # print(dnn_auc, um_auc)
+
+    # Loop through all paths to match tables and collect the parameters...
+    # Get out the y = ax + b parameters 
+    dnn_a, dnn_b, um_a, um_b = auc_over_days(mt_path, vis=False)
