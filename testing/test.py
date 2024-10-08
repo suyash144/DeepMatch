@@ -52,9 +52,9 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
-        if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
-            print("New matchtable already exists - continuing would overwrite.")
-            return
+        # if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+        #     print("New matchtable already exists - continuing would overwrite.")
+        #     return
         try:
             mt = pd.read_csv(mt_path)
             mt.insert(len(mt.columns), "DNNProb", '', allow_duplicates=False)
@@ -136,7 +136,7 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
 
     model = load_trained_model(model_name, device)
 
-    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=32, mode='val', m=mouse, p=probe, l=loc)
+    test_dataset = NeuropixelsDataset(root=test_data_root, batch_size=1, mode='val', m=mouse, p=probe, l=loc)
     test_sampler = ValidationExperimentBatchSampler(test_dataset, shuffle = False)
     test_loader = DataLoader(test_dataset, batch_sampler=test_sampler)
 
@@ -197,6 +197,7 @@ if __name__ == '__main__':
 
     # to test on ALL sets of recordings
     mice = os.listdir(base)
+    fails = []
     for mouse in mice:
         name_path = os.path.join(base, mouse)
         probes = os.listdir(name_path)
@@ -205,4 +206,9 @@ if __name__ == '__main__':
             locations = os.listdir(name_probe)
             for location in locations:
                 name_probe_location = os.path.join(name_probe, location)
-                inference(base, mouse, probe, location, "incl_AV008")
+                try:
+                    inference(base, mouse, probe, location, "incl_AV008")
+                except:
+                    fails.append((mouse, probe, location))
+                    print(f"Error for {mouse, probe, location}")
+    print(fails)
