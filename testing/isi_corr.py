@@ -212,6 +212,8 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     """
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
+    if len(mt) < 20:
+        return None, None
     thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     if um_metric=="MatchProb":
         thresh_um=0.5
@@ -232,14 +234,27 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
+    if len(matches_across)==0:
+        print("no DNN matches found!")
+        return None, None
     matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
+
+    discard_DNN, discard_UM = False, False
 
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
     N_a = len(across) - len(matches_across)
     P_a = len(matches_across)
     N_um = len(across) - len(um_matches)
     P_um = len(um_matches)
+    if P_a < 20:
+        # fewer than 20 matches found by DNN - discard the AUC for this session pair
+        discard_DNN = True
+        P_a = 100
+    if P_um < 20:
+        # same for UnitMatch. Set P values to 100 to avoid division by 0 errors.
+        discard_UM = True
+        P_um = 100
     recall_r, fpr_r, recall_um, fpr_um = [], [], [], []
 
     for idx, row in sorted_across.iterrows():
@@ -255,8 +270,14 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         fpr_r.append(fp_r/N_a)
         recall_um.append(tp_um/P_um)
         fpr_um.append(fp_um/N_um)
-    dnn_auc = np.trapz(recall_r, fpr_r)
-    um_auc = np.trapz(recall_um, fpr_um)
+    if discard_UM:
+        um_auc = None
+    else:
+        um_auc = np.trapz(recall_um, fpr_um)
+    if discard_DNN:
+        dnn_auc = None
+    else:
+        dnn_auc = np.trapz(recall_r, fpr_r)
     return dnn_auc, um_auc
 
 def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
@@ -370,29 +391,32 @@ def visualise_drift_correction(corrections, exp_ids, vis):
 def auc_over_days(mt_path:str, vis:bool):
     mt = pd.read_csv(mt_path)
     sessions = set(mt["RecSes1"].unique())
-    dnn_auc, um_auc, delta_days = [], [], []
+    dnn_auc, um_auc, delta_days_d, delta_days_u = [], [], [], []
     exp_ids,_ = mtpath_to_expids(mt_path, mt)
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
             if r1>=r2:
                 continue
-            dnn, um = auc_one_pair(mt, r1, r2)
-            dnn_auc.append(dnn)
-            um_auc.append(um)
+            dnn, um = auc_one_pair(mt, r1, r2, mt_path=mt_path)
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
-            delta_days.append((date2-date1).days)
+            if dnn is not None:
+                dnn_auc.append(dnn)
+                delta_days_d.append((date2-date1).days)
+            if um is not None:
+                um_auc.append(um)
+                delta_days_u.append((date2-date1).days)
     if vis:
-        plt.scatter(delta_days, dnn_auc, c="r", label="DNN")
-        plt.scatter(delta_days, um_auc, c="b", label="UM")
+        plt.scatter(delta_days_d, dnn_auc, c="r", label="DNN")
+        plt.scatter(delta_days_u, um_auc, c="b", label="UM")
         plt.xlabel("Delta days")
         plt.ylabel("AUC")
         plt.legend()
-        sns.regplot(x = delta_days, y = dnn_auc, label="DNN", color="r")
-        sns.regplot(x = delta_days, y = um_auc, label="UM", color="b")
+        sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
+        sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
         plt.show()
-    dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days, dnn_auc)
-    um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days, um_auc)
+    dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
+    um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days_u, um_auc)
     return dnn_slope, dnn_intercept, um_slope, um_intercept
 
 def plot_distances(matches:pd.DataFrame, positions, rec1=None, rec2=None, corrections=None):
@@ -448,7 +472,7 @@ if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
     # compare_isi_with_dnnsim(mt_path)
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
     # threshold_isi(mt_path, normalise=True, kde=True)
@@ -459,4 +483,33 @@ if __name__ == "__main__":
 
     # Loop through all paths to match tables and collect the parameters...
     # Get out the y = ax + b parameters 
-    dnn_a, dnn_b, um_a, um_b = auc_over_days(mt_path, vis=False)
+    mice = os.listdir(test_data_root)
+    dnn_a, dnn_b, um_a, um_b = [], [], [], []
+    fails = []
+    for mouse in tqdm(mice):
+        mouse_path = os.path.join(test_data_root, mouse)
+        probes = os.listdir(mouse_path)
+        for probe in tqdm(probes):
+            probe_path = os.path.join(mouse_path, probe)
+            locs = os.listdir(probe_path)
+            for loc in tqdm(locs):
+                mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
+                da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                print(f"Done with {mouse, probe, loc}")
+                # try:
+                #     da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                #     dnn_a.append(da)
+                #     dnn_b.append(db)
+                #     um_a.append(ua)
+                #     um_b.append(ub)
+                # except:
+                #     print("FAIL")
+                #     fails.append((mouse, probe, loc))
+    print(fails)
+    plt.scatter(dnn_a, dnn_b, label="DNN", color="r")
+    plt.scatter(um_a, um_b, label="UM", color="b")
+    plt.legend()
+    plt.grid()
+    plt.xlabel("Gradient of AUC over days")
+    plt.ylabel("y-intercept")
+    plt.show()
