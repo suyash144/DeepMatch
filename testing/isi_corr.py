@@ -492,6 +492,7 @@ if __name__ == "__main__":
     mice = os.listdir(test_data_root)
     dnn_a, dnn_b, um_a, um_b = [], [], [], []
     fails = []
+    insufficient_matches = []
     for mouse in tqdm(mice):
         mouse_path = os.path.join(test_data_root, mouse)
         probes = os.listdir(mouse_path)
@@ -507,17 +508,20 @@ if __name__ == "__main__":
                         dnn_a.append(da)
                         dnn_b.append(db)
                     else:
+                        insufficient_matches.append((mouse, probe, loc, "DNN"))
                         print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
                     if ua is not None:
                         um_a.append(ua)
                         um_b.append(ub)
                     else:
+                        insufficient_matches.append((mouse, probe, loc, "UM"))
                         print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
                     print(f"Done with {mouse, probe, loc}")
                 except:
                     print(f"FAIL - An error has occured for {mouse, probe, loc}")
                     fails.append((mouse, probe, loc))
-    print(fails)
+    print("Fails: ", fails)
+    print("Insufficient matches: ", insufficient_matches)
     plt.scatter(dnn_a, dnn_b, label="DNN", color="r")
     plt.scatter(um_a, um_b, label="UM", color="b")
     plt.legend()
