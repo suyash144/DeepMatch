@@ -52,9 +52,9 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
-        # if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
-        #     print("New matchtable already exists - continuing would overwrite.")
-        #     return
+        if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+            print("New matchtable already exists - continuing would overwrite.")
+            return
         try:
             mt = pd.read_csv(mt_path)
             mt.insert(len(mt.columns), "DNNProb", '', allow_duplicates=False)
@@ -77,7 +77,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
                 estimates_i = estimates_i.cuda()
             bsz_i = estimates_i.shape[0]
             exp_id_i = exp_ids_i[0]                     # this should be the same for all files in the batch
-            rec_ses1 = path_dict[exp_id_i]
+            recses1 = path_dict[exp_id_i]
 
             # Forward pass
             enc_estimates_i = model(estimates_i)        # shape [bsz, 256]
@@ -93,7 +93,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
                 if fast:
                     s = clip_sim(enc_estimates_i, enc_candidates_j)
 
-                    rows = ((mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                    rows = ((mt["RecSes1"]==recses1) & (mt["RecSes2"]==recses2))
                     mt.loc[rows, "DNNSim"] = s.flatten()
                     mt.loc[rows, "DNNProb"] = F.softmax(s, dim=1).flatten()
                     
@@ -110,7 +110,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
                             sim = clip_sim(est, cand).item()
                             # Write to the matchtable now that we have ID1, ID2, RecSes1 and RecSes2
                             row = ((mt["ID1"]==id1) & (mt["ID2"]==id2) 
-                                    & (mt["RecSes1"]==rec_ses1) & (mt["RecSes2"]==recses2))
+                                    & (mt["RecSes1"]==recses1) & (mt["RecSes2"]==recses2))
                             row_idx = np.argwhere(row).item()
                             sims[row_idx] = float(sim)
                             mt.loc[row_idx, "DNNSim"] = sim

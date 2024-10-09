@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     for i, mouse in enumerate(recordings_dict["mouse"]):
         experiments = recordings_dict["recordings"][i]
-        for experiment in experiments:
+        for j, experiment in enumerate(experiments):
             
             # load channel map and channel positions for reshaping
             ChannelPos = np.load(os.path.join(experiment,"channel_positions.npy"))
@@ -51,7 +51,7 @@ if __name__ == "__main__":
             os.makedirs(dest_path, exist_ok=True)
 
             um_path = os.path.join(server_root, mouse, probe, loc, "UnitMatch", "Unitmatch.mat")
-            good_id = read_good_id_from_mat(um_path).tolist()
+            good_id = read_good_id_from_mat(um_path, j+1).tolist()
 
             metadata_file = open(os.path.join(dest_path, "metadata.json"), "w")
 

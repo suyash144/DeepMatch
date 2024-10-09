@@ -15,7 +15,7 @@ def is_date_filename(filename):
     pattern = r'^\d{4}-\d{2}-\d{2}$'
     return re.match(pattern, filename) is not None
 
-def read_good_id_from_mat(filepath):
+def read_good_id_from_mat(filepath, recses):
     """
     Reads the GoodID field from the UniqueIDConversion struct in a MATLAB .mat file.
     Args:
@@ -25,9 +25,12 @@ def read_good_id_from_mat(filepath):
         # Navigate through the file structure to get to the Good_ID field
         # This might vary depending on the exact structure of your .mat file
         clusinfo = file['UniqueIDConversion']
-        good_id = clusinfo['GoodID']
-        good_id = np.array(good_id)
-        good_id = good_id.reshape(-1).astype(int)
+        good_id = np.array(clusinfo['GoodID']).astype(int)
+        recsesall = np.array(clusinfo['recsesAll']).astype(int)
+        recsesall = np.squeeze(recsesall, axis=0)
+        idx = np.where(recsesall==int(recses))
+        good_id = good_id[idx]
+        good_id = good_id.reshape(-1)
     return good_id
 
 def select_good_units_files(directory, good_units_value):
