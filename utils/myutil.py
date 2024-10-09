@@ -352,7 +352,7 @@ def mtpath_to_expids(mt_path:str, matches:pd.DataFrame):
     
     um_path = os.path.join(r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap", 
                     metadata["mouse"], metadata["probe"], metadata["loc"], "UnitMatch", "UnitMatch.mat")
-    um = mat73.loadmat(um_path)
+    um = mat73.loadmat(um_path, verbose=False)
     paths = um["UMparam"]["KSDir"]
     exp_ids = {}
     for recses in sessions:
