@@ -473,22 +473,7 @@ def plot_dist_thresh(mt_path, matches:pd.DataFrame, positions, corrections):
     print("finished making plots")
     plt.show()
 
-
-if __name__ == "__main__":
-    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
-    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-    # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-    # compare_isi_with_dnnsim(mt_path)
-    # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
-    # threshold_isi(mt_path, normalise=True, kde=True)
-    # mt = pd.read_csv(mt_path)
-
-    # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
-    # print(dnn_auc, um_auc)
-
-    # Loop through all paths to match tables and collect the parameters...
-    # Get out the y = ax + b parameters 
+def all_mice_auc_over_days(test_data_root:str):
     mice = os.listdir(test_data_root)
     dnn_a, dnn_b, um_a, um_b = [], [], [], []
     fails = []
@@ -529,3 +514,20 @@ if __name__ == "__main__":
     plt.xlabel("Gradient of AUC over days")
     plt.ylabel("y-intercept")
     plt.show()
+
+if __name__ == "__main__":
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
+    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
+    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+    # compare_isi_with_dnnsim(mt_path)
+    # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
+    # threshold_isi(mt_path, normalise=True, kde=True)
+    # mt = pd.read_csv(mt_path)
+
+    # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
+    # print(dnn_auc, um_auc)
+
+    # Loop through all paths to match tables and collect the parameters...
+    # Get out the y = ax + b parameters 
+    all_mice_auc_over_days(test_data_root)
