@@ -514,6 +514,7 @@ def all_mice_auc_over_days(test_data_root:str):
     plt.xlabel("Gradient of AUC over days")
     plt.ylabel("y-intercept")
     plt.show()
+    return dnn_a, dnn_b, um_a, um_b
 
 if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
@@ -528,6 +529,5 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    # Loop through all paths to match tables and collect the parameters...
-    # Get out the y = ax + b parameters 
-    all_mice_auc_over_days(test_data_root)
+    # Get out the y = ax + b parameters for each (mouse, probe, loc)
+    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
