@@ -415,8 +415,14 @@ def auc_over_days(mt_path:str, vis:bool):
         sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
         sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
         plt.show()
-    dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
-    um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days_u, um_auc)
+    if len(delta_days_d) > 0:
+        dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
+    else:
+        dnn_slope, dnn_intercept = None, None
+    if len(delta_days_u) > 0:
+        um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days_u, um_auc)
+    else:
+        um_slope, um_intercept = None, None
     return dnn_slope, dnn_intercept, um_slope, um_intercept
 
 def plot_distances(matches:pd.DataFrame, positions, rec1=None, rec2=None, corrections=None):
@@ -494,17 +500,23 @@ if __name__ == "__main__":
             locs = os.listdir(probe_path)
             for loc in tqdm(locs):
                 mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
-                da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                print(f"Done with {mouse, probe, loc}")
-                # try:
-                #     da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                #     dnn_a.append(da)
-                #     dnn_b.append(db)
-                #     um_a.append(ua)
-                #     um_b.append(ub)
-                # except:
-                #     print("FAIL")
-                #     fails.append((mouse, probe, loc))
+                # da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                try:
+                    da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                    if da is not None:
+                        dnn_a.append(da)
+                        dnn_b.append(db)
+                    else:
+                        print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
+                    if ua is not None:
+                        um_a.append(ua)
+                        um_b.append(ub)
+                    else:
+                        print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
+                    print(f"Done with {mouse, probe, loc}")
+                except:
+                    print(f"FAIL - An error has occured for {mouse, probe, loc}")
+                    fails.append((mouse, probe, loc))
     print(fails)
     plt.scatter(dnn_a, dnn_b, label="DNN", color="r")
     plt.scatter(um_a, um_b, label="UM", color="b")
