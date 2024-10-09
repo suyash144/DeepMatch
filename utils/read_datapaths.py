@@ -44,7 +44,7 @@ def read_datapaths(mice):
                 else:
                     datapath = os.path.join(name_probe_location, "UnitMatch")
                     try:
-                        f = mat73.loadmat(os.path.join(datapath, "UnitMatch.mat"))
+                        f = mat73.loadmat(os.path.join(datapath, "UnitMatch.mat"), verbose=False)
                     except:
                         pass
                     # find the directory to look for the raw waveforms

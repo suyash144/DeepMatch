@@ -214,7 +214,10 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
     if len(mt) < 20:
         return None, None
-    thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
+    try:
+        thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
+    except:
+        return None, None
     if um_metric=="MatchProb":
         thresh_um=0.5
     else:
@@ -415,11 +418,11 @@ def auc_over_days(mt_path:str, vis:bool):
         sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
         sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
         plt.show()
-    if len(delta_days_d) > 0:
+    if len(set(delta_days_d)) > 1:
         dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
     else:
         dnn_slope, dnn_intercept = None, None
-    if len(delta_days_u) > 0:
+    if len(set(delta_days_u)) > 1:
         um_slope, um_intercept, um_r, um_p, um_std = linregress(delta_days_u, um_auc)
     else:
         um_slope, um_intercept = None, None
@@ -486,25 +489,25 @@ def all_mice_auc_over_days(test_data_root:str):
             locs = os.listdir(probe_path)
             for loc in tqdm(locs):
                 mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
-                # da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                try:
-                    da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                    if da is not None:
-                        dnn_a.append(da)
-                        dnn_b.append(db)
-                    else:
-                        insufficient_matches.append((mouse, probe, loc, "DNN"))
-                        print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
-                    if ua is not None:
-                        um_a.append(ua)
-                        um_b.append(ub)
-                    else:
-                        insufficient_matches.append((mouse, probe, loc, "UM"))
-                        print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
-                    print(f"Done with {mouse, probe, loc}")
-                except:
-                    print(f"FAIL - An error has occured for {mouse, probe, loc}")
-                    fails.append((mouse, probe, loc))
+                da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                # try:
+                #     da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                #     if da is not None:
+                #         dnn_a.append(da)
+                #         dnn_b.append(db)
+                #     else:
+                #         insufficient_matches.append((mouse, probe, loc, "DNN"))
+                #         print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
+                #     if ua is not None:
+                #         um_a.append(ua)
+                #         um_b.append(ub)
+                #     else:
+                #         insufficient_matches.append((mouse, probe, loc, "UM"))
+                #         print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
+                #     print(f"Done with {mouse, probe, loc}")
+                # except:
+                #     print(f"FAIL - An error has occured for {mouse, probe, loc}")
+                #     fails.append((mouse, probe, loc))
     print("Fails: ", fails)
     print("Insufficient matches: ", insufficient_matches)
     plt.scatter(dnn_a, dnn_b, label="DNN", color="r")
@@ -518,6 +521,7 @@ def all_mice_auc_over_days(test_data_root:str):
 
 if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
@@ -530,4 +534,4 @@ if __name__ == "__main__":
     # print(dnn_auc, um_auc)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
-    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
+    dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
