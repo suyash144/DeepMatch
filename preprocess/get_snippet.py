@@ -23,6 +23,7 @@ if __name__ == "__main__":
     mode = 'train' # 'train' or 'test'
     old_data_root = os.path.join(os.path.dirname(os.getcwd()), 'data_unitmatch')
     new_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')           # where data is saved after preprocessing
+    server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
     mouse_names = os.listdir(old_data_root)
 
     recordings_dict = read_datapaths(mouse_names)
@@ -39,8 +40,6 @@ if __name__ == "__main__":
             np_path = os.path.join(experiment,"qMetrics" ,'RawWaveforms')
             np_file_names = os.listdir(np_path)
     
-            good_id = read_good_id_from_mat(os.path.join(experiment, "PreparedData.mat")).tolist()
-
             # Construct the path where we want to save processed data locally
             experiment_id = experiment[experiment.find(mouse):]
             experiment_id = experiment_id.replace(mouse, '')
@@ -50,6 +49,9 @@ if __name__ == "__main__":
             loc = recordings_dict["loc"][i]
             dest_path = os.path.join(new_data_root, mouse, probe, loc, experiment_id)
             os.makedirs(dest_path, exist_ok=True)
+
+            um_path = os.path.join(server_root, mouse, probe, loc, "UnitMatch", "Unitmatch.mat")
+            good_id = read_good_id_from_mat(um_path).tolist()
 
             metadata_file = open(os.path.join(dest_path, "metadata.json"), "w")
 

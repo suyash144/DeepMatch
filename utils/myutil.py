@@ -17,15 +17,15 @@ def is_date_filename(filename):
 
 def read_good_id_from_mat(filepath):
     """
-    Reads the Good_ID field from the clusinfo struct in a MATLAB .mat file.
+    Reads the GoodID field from the UniqueIDConversion struct in a MATLAB .mat file.
     Args:
     - filepath (str): Path to the .mat file.
     """
     with h5py.File(filepath, 'r') as file:
         # Navigate through the file structure to get to the Good_ID field
         # This might vary depending on the exact structure of your .mat file
-        clusinfo = file['clusinfo']
-        good_id = clusinfo['Good_ID']
+        clusinfo = file['UniqueIDConversion']
+        good_id = clusinfo['GoodID']
         good_id = np.array(good_id)
         good_id = good_id.reshape(-1).astype(int)
     return good_id
