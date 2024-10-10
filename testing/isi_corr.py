@@ -7,6 +7,7 @@ import dnn_dist
 import seaborn as sns
 from scipy.stats import linregress
 from sklearn.neighbors import KernelDensity
+from sklearn.linear_model import LinearRegression
 if __name__ == '__main__':
     sys.path.insert(0, os.getcwd())
 
@@ -213,11 +214,11 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
     if len(mt) < 20:
-        return None, None
+        return None, None, None, None
     try:
         thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     except:
-        return None, None
+        return None, None, None, None
     if um_metric=="MatchProb":
         thresh_um=0.5
     else:
@@ -239,7 +240,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
     if len(matches_across)==0:
         print("no DNN matches found!")
-        return None, None
+        return None, None, None, None
     matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
 
@@ -275,13 +276,15 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         fpr_um.append(fp_um/N_um)
     if discard_UM:
         um_auc = None
+        P_um = None
     else:
         um_auc = np.trapz(recall_um, fpr_um)
     if discard_DNN:
         dnn_auc = None
+        P_a = None
     else:
         dnn_auc = np.trapz(recall_r, fpr_r)
-    return dnn_auc, um_auc
+    return dnn_auc, um_auc, P_a, P_um
 
 def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
     """
@@ -394,29 +397,40 @@ def visualise_drift_correction(corrections, exp_ids, vis):
 def auc_over_days(mt_path:str, vis:bool):
     mt = pd.read_csv(mt_path)
     sessions = set(mt["RecSes1"].unique())
-    dnn_auc, um_auc, delta_days_d, delta_days_u = [], [], [], []
+    dnn_auc, um_auc, delta_days_d, delta_days_u, numbers_d, numbers_u = [], [], [], [], [], []
     exp_ids,_ = mtpath_to_expids(mt_path, mt)
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
             if r1>=r2:
                 continue
-            dnn, um = auc_one_pair(mt, r1, r2, mt_path=mt_path)
+            dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path)
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             if dnn is not None:
                 dnn_auc.append(dnn)
                 delta_days_d.append((date2-date1).days)
+                numbers_d.append(n_dnn)
             if um is not None:
                 um_auc.append(um)
                 delta_days_u.append((date2-date1).days)
+                numbers_u.append(n_um)
     if vis:
-        plt.scatter(delta_days_d, dnn_auc, c="r", label="DNN")
-        plt.scatter(delta_days_u, um_auc, c="b", label="UM")
+        plt.scatter(delta_days_d, dnn_auc, c="r", label="DNN", s=numbers_d, alpha=0.3)
+        plt.scatter(delta_days_u, um_auc, c="b", label="UM", s=numbers_u, alpha=0.3)
         plt.xlabel("Delta days")
         plt.ylabel("AUC")
+        plt.ylim((0.36,1.05))
         plt.legend()
-        sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
-        sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
+        model1 = LinearRegression()
+        model1.fit(np.array(delta_days_d).reshape(-1,1), dnn_auc, sample_weight=numbers_d)
+        line1 = model1.predict(np.array(delta_days_d).reshape(-1,1))
+        model2 = LinearRegression()
+        model2.fit(np.array(delta_days_u).reshape(-1,1), um_auc, sample_weight=numbers_u)
+        line2 = model2.predict(np.array(delta_days_u).reshape(-1,1))
+        plt.plot(delta_days_d, line1, label="DNN", color="r")
+        plt.plot(delta_days_u, line2, label="UM", color="b")
+        # sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
+        # sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
         plt.show()
     if len(set(delta_days_d)) > 1:
         dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
