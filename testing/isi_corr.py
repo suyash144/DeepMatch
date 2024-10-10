@@ -322,6 +322,24 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     else:
         return filtered_matches
 
+def directional_filter(matches: pd.DataFrame):
+    filtered_matches = matches.copy()
+    for idx, row in matches.iterrows():
+        i1 = row["ID1"]
+        i2 = row["ID2"]
+        r1 = row["RecSes1"]
+        r2 = row["RecSes2"]
+
+        # Check for the reverse match
+        reverse_match = matches.loc[
+            (matches["RecSes1"] == r2) & (matches["ID1"] == i2) & 
+            (matches["RecSes2"] == r1) & (matches["ID2"] == i1)
+        ]
+
+        if reverse_match.empty:
+            filtered_matches = filtered_matches.drop(idx)  # Drop if no reverse match is found
+    return filtered_matches
+
 def get_corrections(matches, positions):
 
     drift_correct_dict = {}
