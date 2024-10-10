@@ -489,25 +489,25 @@ def all_mice_auc_over_days(test_data_root:str):
             locs = os.listdir(probe_path)
             for loc in tqdm(locs):
                 mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
-                da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                # try:
-                #     da, db, ua, ub = auc_over_days(mt_path, vis=False)
-                #     if da is not None:
-                #         dnn_a.append(da)
-                #         dnn_b.append(db)
-                #     else:
-                #         insufficient_matches.append((mouse, probe, loc, "DNN"))
-                #         print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
-                #     if ua is not None:
-                #         um_a.append(ua)
-                #         um_b.append(ub)
-                #     else:
-                #         insufficient_matches.append((mouse, probe, loc, "UM"))
-                #         print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
-                #     print(f"Done with {mouse, probe, loc}")
-                # except:
-                #     print(f"FAIL - An error has occured for {mouse, probe, loc}")
-                #     fails.append((mouse, probe, loc))
+                # da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                try:
+                    da, db, ua, ub = auc_over_days(mt_path, vis=False)
+                    if da is not None:
+                        dnn_a.append(da)
+                        dnn_b.append(db)
+                    else:
+                        insufficient_matches.append((mouse, probe, loc, "DNN"))
+                        print(f"Not enough DNN matches for any session pairs in {mouse, probe, loc}")
+                    if ua is not None:
+                        um_a.append(ua)
+                        um_b.append(ub)
+                    else:
+                        insufficient_matches.append((mouse, probe, loc, "UM"))
+                        print(f"Not enough UM matches for any session pairs in {mouse, probe, loc}")
+                    print(f"Done with {mouse, probe, loc}")
+                except:
+                    print(f"FAIL - An error has occured for {mouse, probe, loc}")
+                    fails.append((mouse, probe, loc))
     print("Fails: ", fails)
     print("Insufficient matches: ", insufficient_matches)
     plt.scatter(dnn_a, dnn_b, label="DNN", color="r")
