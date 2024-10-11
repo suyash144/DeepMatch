@@ -232,20 +232,27 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     # Correct for different median similarities between within- and across-day sets.
     diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
     thresh = thresh - diff
-
     diff_um = np.median(within[um_metric]) - np.median(across[um_metric])
     thresh_um = thresh_um - diff_um
 
+    # Apply thresholds to generate matches for DNN and UnitMatch respectively
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
-    matches_across = directional_filter(matches_across)
     um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+
+    # Only allow a match if it is above threshold when comparing in both directions
+    matches_across = directional_filter(matches_across)
     um_matches = directional_filter(um_matches)
     if len(matches_across)==0:
         print("no DNN matches found!")
         return None, None, None, None
+    
+    # Do spatial filtering in DNN
     matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
-    sorted_across = across.sort_values(by = "ISICorr", ascending=False)
+    # Remove split units from each set of matches
+    matches_across = remove_split_units(mt_path, within, matches_across, thresh, "DNNSim")
+    um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
 
+    sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
 
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
@@ -342,16 +349,27 @@ def directional_filter(matches: pd.DataFrame):
             filtered_matches = filtered_matches.drop(idx)  # Drop if no reverse match is found
     return filtered_matches
 
-def remove_split_units(within:pd.DataFrame, dnn_thresh):
-    matches_within = within.loc[within["DNNSim"]>=dnn_thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
-
-    total_above_thresh = len(matches_within)
+def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, threshold, metric):
+    matches_within = within.loc[within[metric]>=threshold, ["ISICorr", "ID1", "ID2", "RecSes1", "RecSes2"]]
+    matches_within = directional_filter(matches_within)
+    matches_within = spatial_filter(mt_path, matches_within, plot_drift=False)
     off_diag = matches_within.loc[matches_within["ID1"]!=matches_within["ID2"]]
-
-    bad_perc = (len(off_diag)/total_above_thresh)*100
-
-    return bad_perc, matches_within.loc[matches_within["ID1"]==matches_within["ID2"]]
-
+    split_units = []
+    for idx, row in off_diag.iterrows():
+        i1 = row["ID1"]
+        i2 = row["ID2"]
+        r1 = row["RecSes1"]
+        r2 = row["RecSes2"]
+        split_units.append((r1,i1))
+        split_units.append((r2,i2))
+    for idx, row in matches.iterrows():
+        i1 = row["ID1"]
+        i2 = row["ID2"]
+        r1 = row["RecSes1"]
+        r2 = row["RecSes2"]
+        if (r1,i1) in split_units or (r2,i2) in split_units:
+            matches = matches.drop(idx)
+    return matches
 
 def get_corrections(matches, positions):
 
@@ -578,7 +596,7 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
+    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
-    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
+    dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
