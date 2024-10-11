@@ -237,7 +237,9 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     thresh_um = thresh_um - diff_um
 
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
-    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr"]]
+    matches_across = directional_filter(matches_across)
+    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+    um_matches = directional_filter(um_matches)
     if len(matches_across)==0:
         print("no DNN matches found!")
         return None, None, None, None
@@ -340,6 +342,17 @@ def directional_filter(matches: pd.DataFrame):
             filtered_matches = filtered_matches.drop(idx)  # Drop if no reverse match is found
     return filtered_matches
 
+def remove_split_units(within:pd.DataFrame, dnn_thresh):
+    matches_within = within.loc[within["DNNSim"]>=dnn_thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+
+    total_above_thresh = len(matches_within)
+    off_diag = matches_within.loc[matches_within["ID1"]!=matches_within["ID2"]]
+
+    bad_perc = (len(off_diag)/total_above_thresh)*100
+
+    return bad_perc, matches_within.loc[matches_within["ID1"]==matches_within["ID2"]]
+
+
 def get_corrections(matches, positions):
 
     drift_correct_dict = {}
@@ -421,7 +434,7 @@ def auc_over_days(mt_path:str, vis:bool):
         for r2 in tqdm(sessions):
             if r1>=r2:
                 continue
-            dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path)
+            dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             if dnn is not None:
