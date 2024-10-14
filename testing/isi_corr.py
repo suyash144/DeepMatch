@@ -254,8 +254,6 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
 
-    n_neurons = min(len(mt.loc[mt["RecSes1"]==rec1,"ID1"].unique()), len(mt.loc[mt["RecSes1"]==rec2,"ID1"].unique()))
-
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
     N_a = len(across) - len(matches_across)
     P_a = len(matches_across)
@@ -294,7 +292,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         P_a = 0
     else:
         dnn_auc = np.trapz(recall_r, fpr_r)
-    return dnn_auc, um_auc, P_a/n_neurons, P_um/n_neurons
+    return dnn_auc, um_auc, P_a, P_um
 
 def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
     """
