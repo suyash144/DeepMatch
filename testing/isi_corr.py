@@ -581,6 +581,85 @@ def all_mice_auc_over_days(test_data_root:str):
     plt.show()
     return dnn_a, dnn_b, um_a, um_b
 
+def ext_data_fig5(mt_path:str):
+    mt = pd.read_csv(mt_path)
+    sessions = set(mt["RecSes1"].unique())
+    dnn_auc, um_auc, day1_d, day1_u, day2_d, day2_u, numbers_d, numbers_u = [], [], [], [], [], [], [], []
+    exp_ids,_ = mtpath_to_expids(mt_path, mt)
+    for r1 in tqdm(sessions):
+        for r2 in tqdm(sessions):
+            if r1>=r2:
+                continue
+            dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
+            date1 = exp_id_to_date(exp_ids[r1])
+            date2 = exp_id_to_date(exp_ids[r2])
+            if dnn is not None:
+                dnn_auc.append(dnn)
+                day1_d.append(date1)
+                day2_d.append(date2)
+                numbers_d.append(n_dnn)
+            if um is not None:
+                um_auc.append(um)
+                day1_u.append(date1)
+                day2_u.append(date2)
+                numbers_u.append(n_um)
+    dnn = pd.DataFrame({"DNN_day1": pd.to_datetime(day1_d), "DNN_day2": pd.to_datetime(day2_d), "DNNauc": dnn_auc, "DNN_n":numbers_d})
+    um = pd.DataFrame({"UM_day1": pd.to_datetime(day1_u), "UM_day2":pd.to_datetime(day2_u), "UMauc": um_auc, "UM_n": numbers_u})
+
+    day0_dnn = min(min(dnn['DNN_day1']), min(dnn['DNN_day2']))
+    day0_um = min(min(um['UM_day1']), min(um['UM_day2']))
+    dnn['DNN_day1'] = (dnn['DNN_day1'] - day0_dnn).dt.days
+    dnn['DNN_day2'] = (dnn['DNN_day2'] - day0_dnn).dt.days
+    um['UM_day1'] = (um['UM_day1'] - day0_um).dt.days
+    um['UM_day2'] = (um['UM_day2'] - day0_um).dt.days
+
+    if len(dnn["DNN_day1"].unique()) >= len(dnn["DNN_day2"].unique()):
+        days = dnn["DNN_day1"].unique()
+    else:
+        days = dnn["DNN_day2"].unique()
+    auc = np.zeros((len(days), len(days)))
+    n_matches = np.zeros((len(days), len(days)))
+    days.sort()
+    for idx, row in dnn.iterrows():
+        i = np.where(days==row["DNN_day1"])
+        j = np.where(days==row["DNN_day2"])
+        auc[i,j] = row["DNNauc"]
+        n_matches[i,j] = row["DNN_n"]
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(222)
+    cax1 = ax1.matshow(auc)
+    ax1.set_title("AUC as per ISI correlation")
+    ax2 = fig.add_subplot(221)
+    cax2 = ax2.matshow(n_matches)
+    ax2.set_title("Number of matches found")
+    fig.colorbar(cax1,fraction=0.046, pad=0.04)
+    fig.colorbar(cax2,fraction=0.046, pad=0.04)
+
+    if len(um["UM_day1"].unique()) >= len(um["UM_day2"].unique()):
+        days = um["UM_day1"].unique()
+    else:
+        days = um["UM_day2"].unique()
+    aucum = np.zeros((len(days), len(days)))
+    n_matchesum = np.zeros((len(days), len(days)))
+    days.sort()
+    for idx, row in um.iterrows():
+        i = np.where(days==row["UM_day1"])
+        j = np.where(days==row["UM_day2"])
+        aucum[i,j] = row["UMauc"]
+        n_matchesum[i,j] = row["UM_n"]
+
+    ax3 = fig.add_subplot(224)
+    cax3 = ax1.matshow(aucum)
+    ax3.set_title("AUC as per ISI correlation")
+    ax4 = fig.add_subplot(223)
+    cax4 = ax4.matshow(n_matches)
+    ax4.set_title("Number of matches found")
+    fig.colorbar(cax3,fraction=0.046, pad=0.04)
+    fig.colorbar(cax4,fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
@@ -592,10 +671,12 @@ if __name__ == "__main__":
     # threshold_isi(mt_path, normalise=True, kde=True)
     # mt = pd.read_csv(mt_path)
 
+    ext_data_fig5(mt_path)
+
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
+    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
     # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
