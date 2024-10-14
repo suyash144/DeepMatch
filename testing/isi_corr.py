@@ -254,6 +254,8 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
 
+    n_neurons = min(len(mt.loc[mt["RecSes1"]==rec1,"ID1"].unique()), len(mt.loc[mt["RecSes1"]==rec2,"ID1"].unique()))
+
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
     N_a = len(across) - len(matches_across)
     P_a = len(matches_across)
@@ -284,15 +286,15 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         fpr_um.append(fp_um/N_um)
     if discard_UM:
         um_auc = None
-        P_um = None
+        P_um = 0
     else:
         um_auc = np.trapz(recall_um, fpr_um)
     if discard_DNN:
         dnn_auc = None
-        P_a = None
+        P_a = 0
     else:
         dnn_auc = np.trapz(recall_r, fpr_r)
-    return dnn_auc, um_auc, P_a, P_um
+    return dnn_auc, um_auc, P_a/n_neurons, P_um/n_neurons
 
 def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
     """
@@ -595,8 +597,8 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
+    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
-    dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
-    print(dnn_a, dnn_b, um_a, um_b)
+    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
+    # print(dnn_a, dnn_b, um_a, um_b)
