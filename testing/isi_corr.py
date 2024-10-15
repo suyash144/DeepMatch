@@ -213,7 +213,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     """
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
-    if len(mt) < 20:
+    if len(mt) < 40:
         return None, None, None, None
     try:
         thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
