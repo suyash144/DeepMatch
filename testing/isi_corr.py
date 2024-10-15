@@ -259,11 +259,11 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     P_a = len(matches_across)
     N_um = len(across) - len(um_matches)
     P_um = len(um_matches)
-    if P_a < 20:
-        # fewer than 20 matches found by DNN - discard the AUC for this session pair
+    if P_a < 40:
+        # fewer than 40 matches found by DNN - discard the AUC for this session pair
         discard_DNN = True
         P_a = 100
-    if P_um < 20:
+    if P_um < 40:
         # same for UnitMatch. Set P values to 100 to avoid division by 0 errors.
         discard_UM = True
         P_um = 100
