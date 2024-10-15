@@ -37,13 +37,14 @@ if __name__ == "__main__":
             ChannelMap = np.load(os.path.join(experiment,"channel_map.npy"))
             params = get_default_param()
             # prepare waveform data for reshaping
-            np_path = os.path.join(experiment,"qMetrics" ,'RawWaveforms')
-            np_file_names = os.listdir(np_path)
+            try:
+                np_path = os.path.join(experiment,"qMetrics",'RawWaveforms')
+                np_file_names = os.listdir(np_path)
+            except:
+                np_path = os.path.join(experiment,"RawWaveforms")
+                np_file_names = os.listdir(np_path)
     
             # Construct the path where we want to save processed data locally
-            experiment_id = experiment[experiment.find(mouse):]
-            experiment_id = experiment_id.replace(mouse, '')
-            experiment_id = experiment_id.replace("\\", "_")
             experiment_id = get_exp_id(experiment, mouse)
             probe = recordings_dict["probe"][i]
             loc = recordings_dict["loc"][i]

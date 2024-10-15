@@ -2,9 +2,7 @@ import os
 import numpy as np
 import mat73
 
-
-# the mice we want to find the recordings for
-mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", "CB020", "EB019"]   
+ 
 
 def read_datapaths(mice):
     """
@@ -57,3 +55,11 @@ def read_datapaths(mice):
                     raw_waveforms_dict["recordings"].append(np.array(paths))
 
     return raw_waveforms_dict
+
+if __name__=="__main__":
+    # the mice we want to find the recordings for
+    mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", "CB020", "EB019"]
+    s = '\\\\zinu.cortexlab.net\\Subjects\\AV009\\2022-04-14\\ephys\\AV009_2022-04-14_Spontaneous_Part4_g0\\AV009_2022-04-14_Spontaneous_Part4_g0_imec1\\pyKS\\output\\qMetrics\\RawWaveforms'
+    mice = ["AV009"]
+
+    r = read_datapaths(mice)["recordings"]
