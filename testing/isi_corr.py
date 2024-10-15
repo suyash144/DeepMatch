@@ -626,16 +626,6 @@ def ext_data_fig5(mt_path:str):
         auc[i,j] = row["DNNauc"]
         n_matches[i,j] = row["DNN_n"]
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(222)
-    cax1 = ax1.matshow(auc)
-    ax1.set_title("AUC as per ISI correlation")
-    ax2 = fig.add_subplot(221)
-    cax2 = ax2.matshow(n_matches)
-    ax2.set_title("Number of matches found")
-    fig.colorbar(cax1,fraction=0.046, pad=0.04)
-    fig.colorbar(cax2,fraction=0.046, pad=0.04)
-
     if len(um["UM_day1"].unique()) >= len(um["UM_day2"].unique()):
         days = um["UM_day1"].unique()
     else:
@@ -649,11 +639,24 @@ def ext_data_fig5(mt_path:str):
         aucum[i,j] = row["UMauc"]
         n_matchesum[i,j] = row["UM_n"]
 
+    min_auc = min(auc.min(), aucum.min())
+    max_auc = max(auc.max(), aucum.max())
+    min_n = min(n_matches.min(), n_matchesum.min())
+    max_n = max(n_matches.max(), n_matchesum.max()) 
+    fig = plt.figure()
+    ax1 = fig.add_subplot(222)
+    cax1 = ax1.matshow(auc, vmin=min_auc, vmax=max_auc)
+    ax1.set_title("AUC as per ISI correlation")
+    ax2 = fig.add_subplot(221)
+    cax2 = ax2.matshow(n_matches, vmin=min_n, vmax=max_n)
+    ax2.set_title("Number of matches found")
+    fig.colorbar(cax1,fraction=0.046, pad=0.04)
+    fig.colorbar(cax2,fraction=0.046, pad=0.04)
     ax3 = fig.add_subplot(224)
-    cax3 = ax3.matshow(aucum)
+    cax3 = ax3.matshow(aucum, vmin=min_auc, vmax=max_auc)
     ax3.set_title("AUC as per ISI correlation")
     ax4 = fig.add_subplot(223)
-    cax4 = ax4.matshow(n_matches)
+    cax4 = ax4.matshow(n_matches, vmin=min_n, vmax=max_n)
     ax4.set_title("Number of matches found")
     fig.colorbar(cax3,fraction=0.046, pad=0.04)
     fig.colorbar(cax4,fraction=0.046, pad=0.04)
@@ -671,12 +674,12 @@ if __name__ == "__main__":
     # threshold_isi(mt_path, normalise=True, kde=True)
     # mt = pd.read_csv(mt_path)
 
-    # ext_data_fig5(mt_path)
+    ext_data_fig5(mt_path)
 
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
+    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
     # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
