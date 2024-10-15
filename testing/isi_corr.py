@@ -268,20 +268,20 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         discard_UM = True
         P_um = 100
     recall_r, fpr_r, recall_um, fpr_um = [], [], [], []
-
-    for idx, row in sorted_across.iterrows():
-        if idx in matches_across.index:
-            tp_r+=1
-        else:
-            fp_r+=1
-        if idx in um_matches.index:
-            tp_um += 1
-        else:
-            fp_um += 1
-        recall_r.append(tp_r/P_a)
-        fpr_r.append(fp_r/N_a)
-        recall_um.append(tp_um/P_um)
-        fpr_um.append(fp_um/N_um)
+    if not discard_DNN or not discard_UM:
+        for idx, row in sorted_across.iterrows():
+            if idx in matches_across.index:
+                tp_r+=1
+            else:
+                fp_r+=1
+            if idx in um_matches.index:
+                tp_um += 1
+            else:
+                fp_um += 1
+            recall_r.append(tp_r/P_a)
+            fpr_r.append(fp_r/N_a)
+            recall_um.append(tp_um/P_um)
+            fpr_um.append(fp_um/N_um)
     if discard_UM:
         um_auc = None
         P_um = 0
@@ -454,11 +454,11 @@ def auc_over_days(mt_path:str, vis:bool):
             dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
-            if dnn is not None:
+            if dnn is not None and um is not None:
                 dnn_auc.append(dnn)
                 delta_days_d.append((date2-date1).days)
                 numbers_d.append(n_dnn)
-            if um is not None:
+            # if um is not None:
                 um_auc.append(um)
                 delta_days_u.append((date2-date1).days)
                 numbers_u.append(n_um)
@@ -650,7 +650,7 @@ def ext_data_fig5(mt_path:str):
         n_matchesum[i,j] = row["UM_n"]
 
     ax3 = fig.add_subplot(224)
-    cax3 = ax1.matshow(aucum)
+    cax3 = ax3.matshow(aucum)
     ax3.set_title("AUC as per ISI correlation")
     ax4 = fig.add_subplot(223)
     cax4 = ax4.matshow(n_matches)
@@ -671,12 +671,12 @@ if __name__ == "__main__":
     # threshold_isi(mt_path, normalise=True, kde=True)
     # mt = pd.read_csv(mt_path)
 
-    ext_data_fig5(mt_path)
+    # ext_data_fig5(mt_path)
 
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
+    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
     # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
