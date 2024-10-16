@@ -3,8 +3,8 @@ matRootDir = "\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSCh
 csvRootDir = 'C:\Users\suyas\R_DATA_UnitMatch';
 
 
-mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", "CB020", "EB019"];
-
+% mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", "CB020", "EB019"];
+mice = ["AV009"];
 sizes = [];
 
 for mouse = mice
@@ -27,7 +27,7 @@ for mouse = mice
             UM = load(path);
             mt = UM.MatchTable;
             sizes(end+1)=numel(mt);
-            % writetable(mt, csvRootDir + "\" + mouse + "\" + probe + "\" + loc + "\matchtable.csv")
+            writetable(mt, csvRootDir + "\" + mouse + "\" + probe + "\" + loc + "\matchtable.csv")
         end
     end
 end

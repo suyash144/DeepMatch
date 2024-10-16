@@ -581,7 +581,7 @@ def all_mice_auc_over_days(test_data_root:str):
     plt.show()
     return dnn_a, dnn_b, um_a, um_b
 
-def ext_data_fig5(mt_path:str):
+def ext_data_fig5(mt_path:str, name):
     mt = pd.read_csv(mt_path)
     sessions = set(mt["RecSes1"].unique())
     dnn_auc, um_auc, day1_d, day1_u, day2_d, day2_u, numbers_d, numbers_u = [], [], [], [], [], [], [], []
@@ -661,20 +661,28 @@ def ext_data_fig5(mt_path:str):
     fig.colorbar(cax3,fraction=0.046, pad=0.04)
     fig.colorbar(cax4,fraction=0.046, pad=0.04)
     fig.tight_layout()
-    plt.show()
+    results_fig_folder = r"C:\Users\suyas\results_figs"
+    save_path = os.path.join(results_fig_folder, name)
+    plt.savefig(save_path, format='png')
 
 if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
     # compare_isi_with_dnnsim(mt_path)
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
     # threshold_isi(mt_path, normalise=True, kde=True)
     # mt = pd.read_csv(mt_path)
-
-    ext_data_fig5(mt_path)
+    mt_paths = []
+    mt_paths.append(os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "AV008", "Probe0", "IMRO_9", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "CB017", "19011110803", "2", "new_matchtable.csv"))
+    for i, mt_path in enumerate(mt_paths):
+        ext_data_fig5(mt_path, str(i))
 
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)

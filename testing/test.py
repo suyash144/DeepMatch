@@ -193,7 +193,7 @@ if __name__ == '__main__':
     # inference_one_pair(rec1, rec2, model_name = "incl_AV008")
 
     # to test on one specific SET of recordings (ie one group with same (mouse, probe, loc))
-    # inference(base, "AV008", "Probe1", "IMRO_3", "incl_AV008")
+    # inference(base, "AL031", "19011116684", "1", "incl_AV008")
 
     # to test on ALL sets of recordings
     mice = os.listdir(base)
