@@ -375,6 +375,7 @@ def get_corrections(matches, positions):
     drift_correct_dict = {}
     drift_correct_dict["rec1"] = []
     drift_correct_dict["rec2"] = []
+    drift_correct_dict["shank"] = []
     drift_correct_dict["ydiff"] = []
     # two versions - use top if running drift correction once over the whole matchtable.
     # if running drift correction separately for each session pair, use bottom one to avoid crowding terminal.
@@ -386,15 +387,23 @@ def get_corrections(matches, positions):
         pos2 = positions[recses2]
         y1 = pos1.loc[pos1["file"]==row["ID1"],"y"].item()
         y2 = pos2.loc[pos2["file"]==row["ID2"],"y"].item()
+        x1 = pos1.loc[pos1["file"]==row["ID1"],"x"].item()
+        x2 = pos2.loc[pos2["file"]==row["ID2"],"x"].item()
+        shank1 = int(round(x1, -2))
+        shank2 = int(round(x2, -2))
+        if shank1 != shank2:
+            # this pair is matched across different shanks so don't want this to factor into drift correction
+            continue
         dy = y2 - y1
         df = pd.DataFrame(drift_correct_dict)
-        if sum((df["rec1"]==recses1) & (df["rec2"]==recses2)) > 0:
-            ydiffs = df.loc[(df["rec1"]==recses1) & (df["rec2"]==recses2), "ydiff"].item()
+        if sum((df["rec1"]==recses1) & (df["rec2"]==recses2) & (df["shank"]==shank1)) > 0:
+            ydiffs = df.loc[(df["rec1"]==recses1) & (df["rec2"]==recses2) & (df["shank"]==shank1), "ydiff"].item()
             ydiffs.append(dy)
             drift_correct_dict = df.to_dict(orient="list")
         else:
             drift_correct_dict["rec1"].append(recses1)
             drift_correct_dict["rec2"].append(recses2)
+            drift_correct_dict["shank"].append(shank1)
             drift_correct_dict["ydiff"].append([dy])
     medians = [0] * len(drift_correct_dict["ydiff"])
     for i, l in enumerate(drift_correct_dict["ydiff"]):
@@ -416,10 +425,18 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     pos2_df = positions[r2]
     pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
     pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
+    x1 = pos1["x"].item()
+    x2 = pos1["x"].item()
+    shank1 = int(round(x1, -2))
+    shank2 = int(round(x2, -2))
+    if shank1 != shank2:
+        # return a large distance if the pair is across shanks
+        return 1000
     if nocorr:
         y2 = pos2["y"].item()
     else:
-        correction = corrections.loc[(corrections["rec1"]==r1) & (corrections["rec2"]==r2), "ydiff"]
+        correction = corrections.loc[(corrections["rec1"]==r1) & (corrections["rec2"]==r2) 
+                                     & (corrections["shank"]==shank1), "ydiff"]
         y2 = pos2["y"].item() - correction
     dist = np.sqrt((pos1["x"].item() - pos2["x"].item())**2 + (pos1["y"].item() - y2)**2)
     return dist.item()
