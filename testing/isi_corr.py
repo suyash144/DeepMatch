@@ -656,7 +656,7 @@ def ext_data_fig5(mt_path:str, name):
     cax3 = ax3.matshow(aucum, vmin=min_auc, vmax=max_auc)
     ax3.set_title("AUC as per ISI correlation")
     ax4 = fig.add_subplot(223)
-    cax4 = ax4.matshow(n_matches, vmin=min_n, vmax=max_n)
+    cax4 = ax4.matshow(n_matchesum, vmin=min_n, vmax=max_n)
     ax4.set_title("Number of matches found")
     fig.colorbar(cax3,fraction=0.046, pad=0.04)
     fig.colorbar(cax4,fraction=0.046, pad=0.04)
