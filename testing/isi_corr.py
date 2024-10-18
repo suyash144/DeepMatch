@@ -296,12 +296,19 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         dnn_auc = np.trapz(recall_r, fpr_r)
     return dnn_auc, um_auc, P_a, P_um
 
-def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=True):
+def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_corr=True, plot_drift=False):
     """
     Input is a dataframe of potential matches (according to some threshold, e.g. DNNSim)
     Output is a reduced dataframe after filtering out matches that are spatially distant.
     dist_thresh can take a numerical value, or set it to None to just reject the 50% of matches 
     with greatest Euclidean distance.
+
+    Args:
+        mt_path (str): Path to the matchtable.
+        matches (pd.DataFrame): DataFrame containing potential matches.
+        dist_thresh (Optional[float]): Maximum allowed Euclidean distance. If None, filters out the 50% most distant matches.
+        drift_corr (bool): Whether to apply drift correction. Defaults to True.
+        plot_drift (bool): Whether to plot drift correction visualization. Defaults to False.
     """
 
     exp_ids, metadata = mtpath_to_expids(mt_path, matches)
@@ -318,14 +325,16 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
         if plot_drift:
             days, drift = visualise_drift_correction(corrections, exp_ids, plot_drift)
     # plot_distances(matches, positions, corrections=corrections)
+    indices_to_drop = []
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
         else:
             dist = drift_corrected_dist(None, positions, match, True)
         filtered_matches.loc[idx, "dist"] = dist
-        if dist_thresh and dist > dist_thresh:
-            filtered_matches.drop(idx, inplace=True)
+        if dist_thresh and abs(dist) > dist_thresh:
+            indices_to_drop.append(idx)
+    filtered_matches.drop(indices_to_drop, inplace=True)
     if not dist_thresh:
         filtered_matches.sort_values(by = "dist", inplace=True)
         return filtered_matches.head(len(filtered_matches)//2)
@@ -472,8 +481,7 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     x2 = pos2["x"].item()
     shank1 = int(round(x1, -2))
     shank2 = int(round(x2, -2))
-    if shank1 != shank2:
-        # return a large distance if the pair is across shanks
+    if shank1 != shank2 and not nocorr:
         return 1000
     if nocorr:
         y2 = pos2["y"].item()
