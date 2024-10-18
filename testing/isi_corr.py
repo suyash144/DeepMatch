@@ -228,14 +228,15 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         thresh_um = dnn_dist.get_threshold(mt, metric=um_metric, vis=False)
     within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric, "RecSes1", "RecSes2"]]
     across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric, "RecSes1", "RecSes2", "ID1", "ID2"]]
-    if within50:
-        # Only consider pairs that are within 50 microns.
-        across = spatial_filter(mt_path, across, 50, True, False)
     # Correct for different median similarities between within- and across-day sets.
     diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
     thresh = thresh - diff
     diff_um = np.median(within[um_metric]) - np.median(across[um_metric])
     thresh_um = thresh_um - diff_um
+
+    if within50:
+        # Only consider pairs that are within 50 microns.
+        across = spatial_filter(mt_path, across, 50, True, False)
 
     # Apply thresholds to generate matches for DNN and UnitMatch respectively
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
