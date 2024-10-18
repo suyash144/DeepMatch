@@ -370,8 +370,10 @@ def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, t
             matches = matches.drop(idx)
     return matches
 
-def get_corrections(matches, positions):
-
+def get_corrections_old(matches, positions):
+    """
+    Old function - refactored version below
+    """
     drift_correct_dict = {}
     drift_correct_dict["rec1"] = []
     drift_correct_dict["rec2"] = []
@@ -409,7 +411,46 @@ def get_corrections(matches, positions):
     for i, l in enumerate(drift_correct_dict["ydiff"]):
         medians[i] = np.median(l)
     drift_correct_dict["ydiff"] = medians
-    return pd.DataFrame(drift_correct_dict)
+    res = pd.DataFrame(drift_correct_dict)
+    return res
+
+def get_corrections(matches, positions):
+    drift_correct_dict = {"rec1": [], "rec2": [], "shank": [], "ydiff": []}
+    for idx, row in matches.iterrows():
+        recses1 = row["RecSes1"]
+        recses2 = row["RecSes2"]
+        pos1 = positions[recses1]
+        pos2 = positions[recses2]
+        # Get x, y values in a single lookup
+        pos1_vals = pos1.loc[pos1["file"] == row["ID1"], ["x", "y"]]
+        pos2_vals = pos2.loc[pos2["file"] == row["ID2"], ["x", "y"]]
+        if pos1_vals.empty or pos2_vals.empty:
+            # Handle missing data cases
+            continue
+        y1, x1 = pos1_vals.iloc[0]["y"], pos1_vals.iloc[0]["x"]
+        y2, x2 = pos2_vals.iloc[0]["y"], pos2_vals.iloc[0]["x"]
+        shank1 = int(round(x1, -2))
+        shank2 = int(round(x2, -2))
+        if shank1 != shank2:
+            continue  # Skip if shank mismatch
+        dy = y2 - y1
+        # Check if this session pair and shank already exist
+        existing_idx = None
+        for i, (r1, r2, s) in enumerate(zip(drift_correct_dict["rec1"], drift_correct_dict["rec2"], drift_correct_dict["shank"])):
+            if r1 == recses1 and r2 == recses2 and s == shank1:
+                existing_idx = i
+                break
+        if existing_idx is not None:
+            drift_correct_dict["ydiff"][existing_idx].append(dy)
+        else:
+            drift_correct_dict["rec1"].append(recses1)
+            drift_correct_dict["rec2"].append(recses2)
+            drift_correct_dict["shank"].append(shank1)
+            drift_correct_dict["ydiff"].append([dy])
+    # Calculate medians for each ydiff list
+    drift_correct_dict["ydiff"] = [np.median(l) for l in drift_correct_dict["ydiff"]]
+    output = pd.DataFrame(drift_correct_dict)
+    return output
 
 def drift_corrected_dist(corrections, positions, match, nocorr=False):
     """
@@ -426,7 +467,7 @@ def drift_corrected_dist(corrections, positions, match, nocorr=False):
     pos1 = pos1_df.loc[pos1_df["file"]==id1, ["x","y"]]
     pos2 = pos2_df.loc[pos2_df["file"]==id2, ["x","y"]]
     x1 = pos1["x"].item()
-    x2 = pos1["x"].item()
+    x2 = pos2["x"].item()
     shank1 = int(round(x1, -2))
     shank2 = int(round(x2, -2))
     if shank1 != shank2:
@@ -682,6 +723,94 @@ def ext_data_fig5(mt_path:str, name):
     save_path = os.path.join(results_fig_folder, name)
     plt.savefig(save_path+'.png', format='png')
 
+def auc_v2(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
+                 um_metric:str="MatchProb", dist_thresh=None, mt_path=None):
+    """
+    Works the same as auc_one_pair but only counts non_matches that are within 50 microns.
+    """
+
+    mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
+    if len(mt) < 40:
+        return None, None, None, None
+    try:
+        thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
+    except:
+        return None, None, None, None
+    if um_metric=="MatchProb":
+        thresh_um=0.5
+    else:
+        if um_metric=="ScoreExclCentroid":
+            col = mt.loc[:, "WavformSim":"LocTrajectorySim"]
+            mt[um_metric] = col.mean(axis=1)
+        thresh_um = dnn_dist.get_threshold(mt, metric=um_metric, vis=False)
+    within = mt.loc[(mt["RecSes1"]==mt["RecSes2"]), [dnn_metric, "ISICorr", "ID1", "ID2", um_metric, "RecSes1", "RecSes2"]]
+    across = mt.loc[(mt["RecSes1"]!=mt["RecSes2"]), [dnn_metric, "ISICorr", um_metric, "RecSes1", "RecSes2", "ID1", "ID2"]]
+
+    # Correct for different median similarities between within- and across-day sets.
+    diff = np.median(within[dnn_metric]) - np.median(across[dnn_metric])
+    thresh = thresh - diff
+    diff_um = np.median(within[um_metric]) - np.median(across[um_metric])
+    thresh_um = thresh_um - diff_um
+
+    # Apply thresholds to generate matches for DNN and UnitMatch respectively
+    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
+
+    # Only allow a match if it is above threshold when comparing in both directions
+    matches_across = directional_filter(matches_across)
+    um_matches = directional_filter(um_matches)
+    if len(matches_across)==0:
+        print("no DNN matches found!")
+        return None, None, None, None
+    # Do spatial filtering in DNN
+    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
+    # Remove split units from each set of matches
+    matches_across = remove_split_units(mt_path, within, matches_across, thresh, "DNNSim")
+    um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
+
+    sorted_across = across.sort_values(by = "ISICorr", ascending=False)
+    discard_DNN, discard_UM = False, False
+
+    tp_r, fp_r, tp_um, fp_um = 0,0,0,0
+    N_a = len(across) - len(matches_across)
+    P_a = len(matches_across)
+    N_um = len(across) - len(um_matches)
+    P_um = len(um_matches)
+    if P_a < 40:
+        # fewer than 40 matches found by DNN - discard the AUC for this session pair
+        discard_DNN = True
+        P_a = 100
+    if P_um < 40:
+        # same for UnitMatch. Set P values to 100 to avoid division by 0 errors.
+        discard_UM = True
+        P_um = 100
+    recall_r, fpr_r, recall_um, fpr_um = [], [], [], []
+    if not discard_DNN or not discard_UM:
+        for idx, row in sorted_across.iterrows():
+            if idx in matches_across.index:
+                tp_r+=1
+            else:
+                fp_r+=1
+            if idx in um_matches.index:
+                tp_um += 1
+            else:
+                fp_um += 1
+            recall_r.append(tp_r/P_a)
+            fpr_r.append(fp_r/N_a)
+            recall_um.append(tp_um/P_um)
+            fpr_um.append(fp_um/N_um)
+    if discard_UM:
+        um_auc = None
+        P_um = 0
+    else:
+        um_auc = np.trapz(recall_um, fpr_um)
+    if discard_DNN:
+        dnn_auc = None
+        P_a = 0
+    else:
+        dnn_auc = np.trapz(recall_r, fpr_r)
+    return dnn_auc, um_auc, P_a, P_um
+
 if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
@@ -693,15 +822,15 @@ if __name__ == "__main__":
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
     # threshold_isi(mt_path, normalise=True, kde=True)
     # mt = pd.read_csv(mt_path)
-    # mt_paths = []
+    mt_paths = []
     # mt_paths.append(os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv"))
-    # mt_paths.append(os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv"))
-    # mt_paths.append(os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv"))
-    # mt_paths.append(os.path.join(test_data_root, "AV008", "Probe0", "IMRO_9", "new_matchtable.csv"))
-    # mt_paths.append(os.path.join(test_data_root, "CB017", "19011110803", "2", "new_matchtable.csv"))
-    # for i, mt_path in enumerate(mt_paths):
-    #     ext_data_fig5(mt_path, str(i))
-    ext_data_fig5(mt_path, "AV009")
+    mt_paths.append(os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "AV008", "Probe0", "IMRO_9", "new_matchtable.csv"))
+    mt_paths.append(os.path.join(test_data_root, "CB017", "19011110803", "2", "new_matchtable.csv"))
+    for i, mt_path in enumerate(mt_paths):
+        ext_data_fig5(mt_path, str(i))
+    # ext_data_fig5(mt_path, "AV009")
 
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
