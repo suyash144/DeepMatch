@@ -248,11 +248,11 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     if len(matches_across)==0:
         print("no DNN matches found!")
         return None, None, None, None
-    # Do spatial filtering in DNN
-    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
     # Remove split units from each set of matches
     matches_across = remove_split_units(mt_path, within, matches_across, thresh, "DNNSim")
     um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
+    # Do spatial filtering in DNN
+    matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
 
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
@@ -759,8 +759,8 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
+    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
-    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
-    # print(dnn_a, dnn_b, um_a, um_b)
+    dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
+    print(dnn_a, dnn_b, um_a, um_b)
