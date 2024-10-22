@@ -1,10 +1,10 @@
 % Directory containing the .mat files
 matRootDir = "\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap";
-csvRootDir = 'C:\Users\suyas\R_DATA_UnitMatch';
+csvRootDir = 'C:\Users\suyas\UNSEEN_DATA';
 
 
 % mice = ["AL031", "AL032", "AL036", "AV008", "CB015", "CB016", "CB017", "CB018", "CB020", "EB019"];
-mice = ["AV009"];
+mice = ["AV015", "AV021", "AV049", "EB014", "FT033", "FT039", "JF084"];
 sizes = [];
 
 for mouse = mice
