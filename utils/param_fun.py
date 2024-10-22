@@ -45,6 +45,7 @@ def sort_good_channels(goodChannelMap, goodpos):
 
     # Safety check: ensure there are exactly two unique y-axis values
     if len(unique_y_values) != 2:
+        print(f"Found {len(unique_y_values)} instead of 2 unique x values.")
         # TODO: adapt this code to be robust to Neuropixels 1.0 recordings as well as 2.0.
         # For now we are only using Neuropixels 2.0 data -> if we enter this block it means there was a mistake in spike sorting
         # Therefore the fix for now is to use return 0s so that we can handle this in extract_Rwaveforms

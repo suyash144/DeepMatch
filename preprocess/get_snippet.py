@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # reshape for all data
     mode = 'train' # 'train' or 'test'
     old_data_root = os.path.join(os.path.dirname(os.getcwd()), 'data_unitmatch')
-    new_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')           # where data is saved after preprocessing
+    new_data_root = os.path.join(os.path.dirname(os.getcwd()), 'UNSEEN_DATA')           # where data is saved after preprocessing
     server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
     mouse_names = os.listdir(old_data_root)
 
@@ -87,15 +87,13 @@ if __name__ == "__main__":
                     # print(np_waveform_file)
                     print(f"Corrupted data in {np_waveform_file}")
                     continue
-                    Rwaveform = np.zeros((1,1,1))
-                    MaxSitepos = np.array([-1,-1])
                 else:
                     # print('np_file_name', np_file_name)
-                    try:
-                        MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
-                    except:
-                        print(f"Failed to extract waveforms for {np_waveform_file}")
-                        continue
+                    # try:
+                    MaxSiteMean, MaxSitepos, sorted_goodChannelMap, sorted_goodpos, Rwaveform = extract_Rwaveforms(data, ChannelPos, ChannelMap, params)
+                    # except:
+                    #     print(f"Failed to extract waveforms for {np_waveform_file}")
+                    #     continue
 
                 save_waveforms_hdf5(dest_path, np_file_name, Rwaveform, MaxSitepos)
         print(f"Finished processing data for experiment {experiment_id}")

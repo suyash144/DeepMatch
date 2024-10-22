@@ -37,6 +37,8 @@ def read_datapaths(mice):
             locations = os.listdir(name_probe)
             for location in locations:
                 name_probe_location = os.path.join(name_probe, location)
+                if not os.path.isdir(name_probe_location):
+                    continue
                 if not os.path.exists(os.path.join(name_probe_location, "UnitMatch")):
                     print(f"No UnitMatch folder where it was expected for mouse {mouse}")
                 else:
