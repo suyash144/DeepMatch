@@ -237,10 +237,7 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     if within50:
         # Only consider pairs that are within 50 microns.
-        start = time.time()
         across = spatial_filter(mt_path, across, 50, True, False)
-        end = time.time()
-        print(f"Time for spatial filtering: {end-start}")
 
     # Apply thresholds to generate matches for DNN and UnitMatch respectively
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2", dnn_metric]]
@@ -326,21 +323,15 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
                           metadata["loc"], exp_id, "processed_waveforms")
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
-    pos_end = time.time()
-    print(f"Time for reading positions: {pos_end - pos_start}")
     if drift_corr:
         corrections = get_corrections(matches, positions)
-    corr = time.time()
-    print(f"Time for generating corrections: {corr - pos_end}")
     # plot_distances(matches, positions, corrections=corrections)
     matches_with_dist = vectorized_drift_corrected_dist(corrections, positions, matches)
-    loop = time.time()
-    print(f"Time for loop: {loop - corr}")
     if not dist_thresh:
         matches_with_dist.sort_values(by = "dist", inplace=True)
         return matches_with_dist.head(len(matches)//2)
     else:
-        return matches_with_dist.loc[matches["dist"]<dist_thresh]
+        return matches_with_dist.loc[matches_with_dist["dist"]<dist_thresh]
 
 def directional_filter(matches: pd.DataFrame):
     filtered_matches = matches.copy()
@@ -788,7 +779,7 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=False)
+    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
     # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
