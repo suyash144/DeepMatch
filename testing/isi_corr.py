@@ -361,6 +361,19 @@ def directional_filter(matches: pd.DataFrame):
     return filtered_matches
 
 def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, threshold, metric):
+    """
+    Takes a dataframe of matches and returns a smaller dataframe with potential split units removed.
+    Slightly drastic approach but necessary for the ISI correlation comparisons to make sense.
+
+    Args:
+        mt_path: Path to the matchtable csv file for this location.
+        within: Dataframe containing only the pairs within days (necessary to identify split units)
+        matches: The dataframe of matches which we want to edit.
+        threshold: The threshold used to define what is a match and what isn't.
+        metric: The metric used to define the threshold above. Usually DNNSim for the DNN method and MatchProb for UM.
+    """
+
+
     matches_within = within.loc[within[metric]>=threshold, ["ISICorr", "ID1", "ID2", "RecSes1", "RecSes2"]]
     matches_within = directional_filter(matches_within)
     matches_within = spatial_filter(mt_path, matches_within, plot_drift=False)
@@ -381,6 +394,25 @@ def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, t
         if (r1,i1) in split_units or (r2,i2) in split_units:
             matches = matches.drop(idx)
     return matches
+
+def remove_conflicts(matches:pd.DataFrame):
+    indices_to_drop = []
+    for idx, match in matches.iterrows():
+        id1 = match["ID1"]
+        id2 = match["ID2"]
+        r1 = match["RecSes1"]
+        r2 = match["RecSes2"]
+
+        neuron1=matches.loc[(matches["ID1"]==id1) & (matches["RecSes1"]==r1),:]
+        if len(neuron1)>1:
+            neuron1 = neuron1.sort_values(by=["DNNSim"], ascending=False)
+            indices_to_drop += neuron1.tail(len(neuron1)-1).index.to_list()
+        
+        neuron2=matches.loc[(matches["ID2"]==id2) & (matches["RecSes2"]==r2),:]
+        if len(neuron2)>1:
+            neuron2 = neuron2.sort_values(by=["DNNSim"], ascending=False)
+            indices_to_drop += neuron2.tail(len(neuron2)-1).index.to_list()
+    return matches.drop(list(set(indices_to_drop)))
 
 def get_corrections_old(matches, positions):
     """
