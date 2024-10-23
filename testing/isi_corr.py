@@ -330,31 +330,17 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
     print(f"Time for reading positions: {pos_end - pos_start}")
     if drift_corr:
         corrections = get_corrections(matches, positions)
-        if plot_drift:
-            days, drift = visualise_drift_correction(corrections, exp_ids, plot_drift)
     corr = time.time()
     print(f"Time for generating corrections: {corr - pos_end}")
     # plot_distances(matches, positions, corrections=corrections)
-    indices_to_drop = []
-    distances = []
-    for idx, match in matches.iterrows():
-        if drift_corr:
-            dist = drift_corrected_dist(corrections, positions, match)
-        else:
-            dist = drift_corrected_dist(None, positions, match, True)
-        if dist_thresh and abs(dist) > dist_thresh:
-            indices_to_drop.append(idx)
-        else:
-            distances.append(dist)
+    matches_with_dist = vectorized_drift_corrected_dist(corrections, positions, matches)
     loop = time.time()
     print(f"Time for loop: {loop - corr}")
-    matches.drop(indices_to_drop, inplace=True)
-    matches.insert(len(matches.columns), "dist", distances)
     if not dist_thresh:
-        matches.sort_values(by = "dist", inplace=True)
-        return matches.head(len(matches)//2)
+        matches_with_dist.sort_values(by = "dist", inplace=True)
+        return matches_with_dist.head(len(matches)//2)
     else:
-        return matches
+        return matches_with_dist.loc[matches["dist"]<dist_thresh]
 
 def directional_filter(matches: pd.DataFrame):
     filtered_matches = matches.copy()
@@ -387,10 +373,8 @@ def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, t
         metric: The metric used to define the threshold above. Usually DNNSim for the DNN method and MatchProb for UM.
     """
 
-
     matches_within = within.loc[within[metric]>=threshold, ["ISICorr", "ID1", "ID2", "RecSes1", "RecSes2"]]
     matches_within = directional_filter(matches_within)
-    matches_within = spatial_filter(mt_path, matches_within, plot_drift=False)
     off_diag = matches_within.loc[matches_within["ID1"]!=matches_within["ID2"]]
     split_units = []
     for idx, row in off_diag.iterrows():
@@ -466,6 +450,48 @@ def get_corrections(matches, positions):
     drift_correct_dict["ydiff"] = [np.median(l) for l in drift_correct_dict["ydiff"]]
     output = pd.DataFrame(drift_correct_dict)
     return output
+
+def vectorized_drift_corrected_dist(corrections, positions, matches:pd.DataFrame, nocorr=False):
+    """
+    Vectorized drift-corrected distance computation.
+    """
+
+    # Extract the x, y positions
+    matches = matches.assign(
+        x1=matches.apply(lambda row: positions[row['RecSes1']].loc[positions[row['RecSes1']]['file'] == row['ID1'], 'x'].values[0], axis=1),
+        y1=matches.apply(lambda row: positions[row['RecSes1']].loc[positions[row['RecSes1']]['file'] == row['ID1'], 'y'].values[0], axis=1),
+        x2=matches.apply(lambda row: positions[row['RecSes2']].loc[positions[row['RecSes2']]['file'] == row['ID2'], 'x'].values[0], axis=1),
+        y2=matches.apply(lambda row: positions[row['RecSes2']].loc[positions[row['RecSes2']]['file'] == row['ID2'], 'y'].values[0], axis=1)
+    )
+
+    # Calculate shanks (rounded x coordinates)
+    matches['shank1'] = matches['x1'].round(-2).astype(int)
+    matches['shank2'] = matches['x2'].round(-2).astype(int)
+
+    # Apply corrections where necessary
+    if not nocorr:
+        matches["idx"] = matches.index
+        matches = matches.merge(
+            corrections[['rec1', 'rec2', 'shank', 'ydiff']], 
+            how='left', 
+            left_on=['RecSes1', 'RecSes2', 'shank1'], 
+            right_on=['rec1', 'rec2', 'shank']
+        )
+        matches.index = matches["idx"]
+        matches.drop(['rec1', 'rec2', 'shank', 'idx'], axis=1, inplace=True)
+        # Apply the drift correction conditionally
+        matches['y2_corr'] = np.where(
+            matches['shank1'] != matches['shank2'], 
+            1000, 
+            matches['y2'] - matches['ydiff'].fillna(0)
+        )
+    else:
+        matches['y2_corr'] = matches['y2']
+
+    # Calculate the Euclidean distance
+    matches['dist'] = np.sqrt((matches['x1'] - matches['x2'])**2 + (matches['y1'] - matches['y2_corr'])**2)
+
+    return matches
 
 def drift_corrected_dist(corrections, positions, match, nocorr=False):
     """
@@ -762,7 +788,7 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
+    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=False)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
     # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
