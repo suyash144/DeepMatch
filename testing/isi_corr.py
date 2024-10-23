@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import dnn_dist
 import seaborn as sns
+import time
 from scipy.stats import linregress
 from sklearn.neighbors import KernelDensity
 from sklearn.linear_model import LinearRegression
@@ -236,7 +237,10 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     if within50:
         # Only consider pairs that are within 50 microns.
+        start = time.time()
         across = spatial_filter(mt_path, across, 50, True, False)
+        end = time.time()
+        print(f"Time for spatial filtering: {end-start}")
 
     # Apply thresholds to generate matches for DNN and UnitMatch respectively
     matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2", dnn_metric]]
@@ -256,9 +260,9 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     matches_across, dnn_conflicts = remove_conflicts(matches_across, dnn_metric)
     um_matches, um_conflicts = remove_conflicts(um_matches, um_metric)
 
+    # Calculate AUCs using final sets of matches
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
-
     tp_r, fp_r, tp_um, fp_um = 0,0,0,0
     N_a = len(across) - len(matches_across)
     P_a = len(matches_across)
@@ -313,7 +317,7 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
         drift_corr (bool): Whether to apply drift correction. Defaults to True.
         plot_drift (bool): Whether to plot drift correction visualization. Defaults to False.
     """
-
+    pos_start = time.time()
     exp_ids, metadata = mtpath_to_expids(mt_path, matches)
     test_data_root = mt_path[:mt_path.find(metadata["mouse"])]
     positions = {}
@@ -322,27 +326,35 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
                           metadata["loc"], exp_id, "processed_waveforms")
         pos_dict = read_pos(fp)
         positions[recses] = pd.DataFrame(pos_dict)
-    filtered_matches = matches.copy()
+    pos_end = time.time()
+    print(f"Time for reading positions: {pos_end - pos_start}")
     if drift_corr:
         corrections = get_corrections(matches, positions)
         if plot_drift:
             days, drift = visualise_drift_correction(corrections, exp_ids, plot_drift)
+    corr = time.time()
+    print(f"Time for generating corrections: {corr - pos_end}")
     # plot_distances(matches, positions, corrections=corrections)
     indices_to_drop = []
+    distances = []
     for idx, match in matches.iterrows():
         if drift_corr:
             dist = drift_corrected_dist(corrections, positions, match)
         else:
             dist = drift_corrected_dist(None, positions, match, True)
-        filtered_matches.loc[idx, "dist"] = dist
         if dist_thresh and abs(dist) > dist_thresh:
             indices_to_drop.append(idx)
-    filtered_matches.drop(indices_to_drop, inplace=True)
+        else:
+            distances.append(dist)
+    loop = time.time()
+    print(f"Time for loop: {loop - corr}")
+    matches.drop(indices_to_drop, inplace=True)
+    matches.insert(len(matches.columns), "dist", distances)
     if not dist_thresh:
-        filtered_matches.sort_values(by = "dist", inplace=True)
-        return filtered_matches.head(len(filtered_matches)//2)
+        matches.sort_values(by = "dist", inplace=True)
+        return matches.head(len(matches)//2)
     else:
-        return filtered_matches
+        return matches
 
 def directional_filter(matches: pd.DataFrame):
     filtered_matches = matches.copy()
@@ -504,7 +516,6 @@ def visualise_drift_correction(corrections, exp_ids, vis):
 
 def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
     mt = pd.read_csv(mt_path)
-    print("Loaded matchtable csv")
     sessions = set(mt["RecSes1"].unique())
     dnn_auc, um_auc, delta_days_d, delta_days_u, numbers_d, numbers_u = [], [], [], [], [], []
     exp_ids,_ = mtpath_to_expids(mt_path, mt)
@@ -512,9 +523,7 @@ def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
         for r2 in tqdm(sessions):
             if r1>=r2:
                 continue
-            print("Calculating AUCs...")
             dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path, dist_thresh=20, within50=within50)
-            print("Got AUCs")
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             if dnn is not None and um is not None:
