@@ -239,9 +239,8 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
         across = spatial_filter(mt_path, across, 50, True, False)
 
     # Apply thresholds to generate matches for DNN and UnitMatch respectively
-    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
-    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2"]]
-
+    matches_across = across.loc[mt[dnn_metric]>=thresh, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2", dnn_metric]]
+    um_matches = across.loc[mt[um_metric]>=thresh_um, ["ISICorr", "RecSes1", "RecSes2", "ID1", "ID2", um_metric]]
     # Only allow a match if it is above threshold when comparing in both directions
     matches_across = directional_filter(matches_across)
     um_matches = directional_filter(um_matches)
@@ -253,6 +252,9 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
     # Do spatial filtering in DNN
     matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
+    # Resolve conflict matches by only keeping the match with highest DNNSim
+    matches_across, dnn_conflicts = remove_conflicts(matches_across, dnn_metric)
+    um_matches, um_conflicts = remove_conflicts(um_matches, um_metric)
 
     sorted_across = across.sort_values(by = "ISICorr", ascending=False)
     discard_DNN, discard_UM = False, False
@@ -395,7 +397,7 @@ def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, t
             matches = matches.drop(idx)
     return matches
 
-def remove_conflicts(matches:pd.DataFrame):
+def remove_conflicts(matches:pd.DataFrame, metric:str):
     indices_to_drop = []
     for idx, match in matches.iterrows():
         id1 = match["ID1"]
@@ -405,58 +407,15 @@ def remove_conflicts(matches:pd.DataFrame):
 
         neuron1=matches.loc[(matches["ID1"]==id1) & (matches["RecSes1"]==r1),:]
         if len(neuron1)>1:
-            neuron1 = neuron1.sort_values(by=["DNNSim"], ascending=False)
+            neuron1 = neuron1.sort_values(by=[metric], ascending=False)
             indices_to_drop += neuron1.tail(len(neuron1)-1).index.to_list()
         
         neuron2=matches.loc[(matches["ID2"]==id2) & (matches["RecSes2"]==r2),:]
         if len(neuron2)>1:
-            neuron2 = neuron2.sort_values(by=["DNNSim"], ascending=False)
+            neuron2 = neuron2.sort_values(by=[metric], ascending=False)
             indices_to_drop += neuron2.tail(len(neuron2)-1).index.to_list()
-    return matches.drop(list(set(indices_to_drop)))
-
-def get_corrections_old(matches, positions):
-    """
-    Old function - refactored version below
-    """
-    drift_correct_dict = {}
-    drift_correct_dict["rec1"] = []
-    drift_correct_dict["rec2"] = []
-    drift_correct_dict["shank"] = []
-    drift_correct_dict["ydiff"] = []
-    # two versions - use top if running drift correction once over the whole matchtable.
-    # if running drift correction separately for each session pair, use bottom one to avoid crowding terminal.
-    # for idx, row in tqdm(matches.iterrows(), desc="Building drift correction dataframe", total=len(matches)):
-    for idx, row in matches.iterrows():
-        recses1 = row["RecSes1"]
-        recses2 = row["RecSes2"]
-        pos1 = positions[recses1]
-        pos2 = positions[recses2]
-        y1 = pos1.loc[pos1["file"]==row["ID1"],"y"].item()
-        y2 = pos2.loc[pos2["file"]==row["ID2"],"y"].item()
-        x1 = pos1.loc[pos1["file"]==row["ID1"],"x"].item()
-        x2 = pos2.loc[pos2["file"]==row["ID2"],"x"].item()
-        shank1 = int(round(x1, -2))
-        shank2 = int(round(x2, -2))
-        if shank1 != shank2:
-            # this pair is matched across different shanks so don't want this to factor into drift correction
-            continue
-        dy = y2 - y1
-        df = pd.DataFrame(drift_correct_dict)
-        if sum((df["rec1"]==recses1) & (df["rec2"]==recses2) & (df["shank"]==shank1)) > 0:
-            ydiffs = df.loc[(df["rec1"]==recses1) & (df["rec2"]==recses2) & (df["shank"]==shank1), "ydiff"].item()
-            ydiffs.append(dy)
-            drift_correct_dict = df.to_dict(orient="list")
-        else:
-            drift_correct_dict["rec1"].append(recses1)
-            drift_correct_dict["rec2"].append(recses2)
-            drift_correct_dict["shank"].append(shank1)
-            drift_correct_dict["ydiff"].append([dy])
-    medians = [0] * len(drift_correct_dict["ydiff"])
-    for i, l in enumerate(drift_correct_dict["ydiff"]):
-        medians[i] = np.median(l)
-    drift_correct_dict["ydiff"] = medians
-    res = pd.DataFrame(drift_correct_dict)
-    return res
+    indices_to_drop = list(set(indices_to_drop))
+    return matches.drop(indices_to_drop), len(indices_to_drop)
 
 def get_corrections(matches, positions):
     drift_correct_dict = {"rec1": [], "rec2": [], "shank": [], "ydiff": []}
@@ -465,7 +424,7 @@ def get_corrections(matches, positions):
         recses2 = row["RecSes2"]
         pos1 = positions[recses1]
         pos2 = positions[recses2]
-        # Get x, y values in a single lookup
+        # Get x, y values
         pos1_vals = pos1.loc[pos1["file"] == row["ID1"], ["x", "y"]]
         pos2_vals = pos2.loc[pos2["file"] == row["ID2"], ["x", "y"]]
         if pos1_vals.empty or pos2_vals.empty:
@@ -545,6 +504,7 @@ def visualise_drift_correction(corrections, exp_ids, vis):
 
 def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
     mt = pd.read_csv(mt_path)
+    print("Loaded matchtable csv")
     sessions = set(mt["RecSes1"].unique())
     dnn_auc, um_auc, delta_days_d, delta_days_u, numbers_d, numbers_u = [], [], [], [], [], []
     exp_ids,_ = mtpath_to_expids(mt_path, mt)
@@ -552,7 +512,9 @@ def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
         for r2 in tqdm(sessions):
             if r1>=r2:
                 continue
+            print("Calculating AUCs...")
             dnn, um, n_dnn, n_um = auc_one_pair(mt, r1, r2, mt_path=mt_path, dist_thresh=20, within50=within50)
+            print("Got AUCs")
             date1 = exp_id_to_date(exp_ids[r1])
             date2 = exp_id_to_date(exp_ids[r2])
             if dnn is not None and um is not None:
@@ -791,8 +753,8 @@ if __name__ == "__main__":
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)
 
-    # dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
+    dnn_slope, dnn_intercept, um_slope, um_intercept = auc_over_days(mt_path, vis=True, within50=True)
 
     # Get out the y = ax + b parameters for each (mouse, probe, loc)
-    dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
-    print(dnn_a, dnn_b, um_a, um_b)
+    # dnn_a, dnn_b, um_a, um_b = all_mice_auc_over_days(test_data_root)
+    # print(dnn_a, dnn_b, um_a, um_b)
