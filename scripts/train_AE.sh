@@ -1,4 +1,4 @@
 #!/bin/bash
 
 python -m train_AE \
-    --exp_name mice18
+    --exp_name alt10

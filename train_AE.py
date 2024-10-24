@@ -113,7 +113,7 @@ def run(args):
     os.makedirs(log_folder, exist_ok=True)
     writer = SummaryWriter(log_dir=log_folder)
 
-    np_root = os.path.join(os.path.dirname(os.getcwd()), 'TRAIN_DATA')
+    np_root = os.path.join(os.path.dirname(os.getcwd()), 'TRAIN_DATA_alt10')
     np_dataset = AE_NeuropixelsDataset(root=np_root,batch_size=args.batchsize)
     print(f"Total size of dataset (train + val + test): {len(np_dataset)}")
     train_size = int(0.9 * len(np_dataset))

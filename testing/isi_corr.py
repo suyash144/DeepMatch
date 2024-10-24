@@ -207,10 +207,14 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
                  um_metric:str="MatchProb", dist_thresh=None, mt_path=None, within50=True):
     """
     Returns the AUC figures for DNN and UnitMatch when comparing across a pair of sessions.
-    rec1 and rec2 are the RecSes IDs we want to compare.
-    dnn_metric can be "DNNSim" or "DNNProb".
-    um_metric can be "TotalScore", "MatchProb" or "ScoreExclCentroid".
-    thresh sets the threshold for spatial filtering (or if None then just reject worse half of matches)
+
+    Args:
+        rec1 and rec2 are the RecSes IDs we want to compare (as integers).
+        dnn_metric can be "DNNSim" or "DNNProb".
+        um_metric can be "TotalScore", "MatchProb" or "ScoreExclCentroid".
+        dist_thresh sets the threshold for spatial filtering (or if None then just reject worse half of matches)
+        mt_path is the filepath for the matchtable csv.
+        If within50 is True, then the function only considers tries to match pairs within 50 microns of each other.
     """
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
@@ -245,12 +249,12 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     # Only allow a match if it is above threshold when comparing in both directions
     matches_across = directional_filter(matches_across)
     um_matches = directional_filter(um_matches)
-    if len(matches_across)==0:
-        print("no DNN matches found!")
-        return None, None, None, None
     # Remove split units from each set of matches
     matches_across = remove_split_units(mt_path, within, matches_across, thresh, "DNNSim")
     um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
+    if len(matches_across)==0:
+        print("no DNN matches found!")
+        return None, None, None, None
     # Do spatial filtering in DNN
     matches_across = spatial_filter(mt_path, matches_across, dist_thresh, plot_drift=False)
     # Resolve conflict matches by only keeping the match with highest DNNSim
@@ -734,7 +738,7 @@ def ext_data_fig5(mt_path:str, name):
     max_n = max(n_matches.max(), n_matchesum.max()) 
     fig = plt.figure()
     ax1 = fig.add_subplot(222)
-    cax1 = ax1.matshow(auc, vmin=min_auc, vmax=max_auc)
+    cax1 = ax1.matshow(auc, vmin=min_auc, vmax=max_auc, cmap='RdBu')
     ax1.set_title("AUC as per ISI correlation")
     ax2 = fig.add_subplot(221)
     cax2 = ax2.matshow(n_matches, vmin=min_n, vmax=max_n)
@@ -742,7 +746,7 @@ def ext_data_fig5(mt_path:str, name):
     fig.colorbar(cax1,fraction=0.046, pad=0.04)
     fig.colorbar(cax2,fraction=0.046, pad=0.04)
     ax3 = fig.add_subplot(224)
-    cax3 = ax3.matshow(aucum, vmin=min_auc, vmax=max_auc)
+    cax3 = ax3.matshow(aucum, vmin=min_auc, vmax=max_auc, cmap='RdBu')
     ax3.set_title("AUC as per ISI correlation")
     ax4 = fig.add_subplot(223)
     cax4 = ax4.matshow(n_matchesum, vmin=min_n, vmax=max_n)
@@ -756,12 +760,12 @@ def ext_data_fig5(mt_path:str, name):
 
 
 if __name__ == "__main__":
-    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "R_DATA_UnitMatch")
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "UNSEEN_DATA")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-    # mt_path = os.path.join(test_data_root, "AV009", "Probe1", "IMRO_6", "new_matchtable.csv")
+    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
+    mt_path = os.path.join(test_data_root, "AV009", "Probe1", "IMRO_10", "new_matchtable_18mice.csv")
     # compare_isi_with_dnnsim(mt_path)
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
     # threshold_isi(mt_path, normalise=True, kde=True)
@@ -774,7 +778,7 @@ if __name__ == "__main__":
     # mt_paths.append(os.path.join(test_data_root, "CB017", "19011110803", "2", "new_matchtable.csv"))
     # for i, mt_path in enumerate(mt_paths):
     #     ext_data_fig5(mt_path, str(i))
-    # ext_data_fig5(mt_path, "AV009")
+    # ext_data_fig5(mt_path, "new")
 
     # dnn_auc, um_auc = auc_one_pair(mt, 1, 2)
     # print(dnn_auc, um_auc)

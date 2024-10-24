@@ -106,7 +106,7 @@ def run(args):
     os.makedirs(log_folder, exist_ok=True)
     writer = SummaryWriter(log_dir=log_folder)
 
-    train_data_root = os.path.join(os.path.dirname(os.getcwd()), 'R_DATA_UnitMatch')
+    train_data_root = os.path.join(os.path.dirname(os.getcwd()), 'TRAIN_DATA_alt10')
     np_dataset = NeuropixelsDataset(root=train_data_root,batch_size=args.batchsize, mode='train')
     train_sampler = TrainExperimentBatchSampler(np_dataset, args.batchsize, shuffle=True)
     train_loader = DataLoader(np_dataset, batch_sampler=train_sampler)
