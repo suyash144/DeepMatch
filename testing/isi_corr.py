@@ -572,7 +572,8 @@ def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
         plt.plot(delta_days_u, line2, label="UM", color="b")
         # sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
         # sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
-        plt.show()
+        save_path = os.path.join(r"C:\Users\suyas\results_figs", "AV009_inclAV008")
+        plt.savefig(save_path+'.png', format='png')
     if len(set(delta_days_d)) > 1:
         dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
     else:
@@ -760,12 +761,12 @@ def ext_data_fig5(mt_path:str, name):
 
 
 if __name__ == "__main__":
-    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "UNSEEN_DATA")
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
     # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable.csv")
-    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")       # 2497 neurons
-    mt_path = os.path.join(test_data_root, "AV009", "Probe1", "IMRO_10", "new_matchtable_18mice.csv")
+    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable_18mice.csv")       # 2497 neurons
+    mt_path = os.path.join(test_data_root, "AV009", "Probe1", "IMRO_10", "new_matchtable.csv")
     # compare_isi_with_dnnsim(mt_path)
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
     # threshold_isi(mt_path, normalise=True, kde=True)

@@ -38,7 +38,7 @@ def load_trained_model(model_name:str, device="cpu"):
     # Can also return projector if needed
     return model
 
-def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, fast=True):
+def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, model_name, fast=True):
     """
     fast mode assumes that the matchtable and data are sorted consistently so that elements in similarity
     and probability matrices map to rows in match table trivially.
@@ -52,7 +52,9 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
         
         mt_path = os.path.join(test_data_root, mouse, probe, loc, "matchtable.csv")
 
-        if os.path.exists(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")):
+        save_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable_"+model_name+".csv")
+
+        if os.path.exists(save_path):
             print("New matchtable already exists - continuing would overwrite.")
             return
         try:
@@ -119,7 +121,7 @@ def write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, f
                             mt.loc[row, "DNNProb"] = probs[i]
             progress_bar.update(1)
         
-        mt.to_csv(os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv"))
+        mt.to_csv(save_path)
         progress_bar.close()
 
 def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str, device = "cpu"):
@@ -142,7 +144,7 @@ def inference(test_data_root:str, mouse:str, probe:str, loc:str, model_name:str,
 
     print(f"Length of test dataset: {len(test_dataset)}")
 
-    write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc)
+    write_to_matchtable(model, test_data_root, test_loader, mouse, probe, loc, model_name)
 
 def inference_one_pair(rec1:str, rec2:str, model_name:str, device="cpu"):
     """
