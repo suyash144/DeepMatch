@@ -409,41 +409,31 @@ def remove_conflicts(matches:pd.DataFrame, metric:str):
     return matches.drop(indices_to_drop), len(indices_to_drop)
 
 def get_corrections(matches, positions):
-    drift_correct_dict = {"rec1": [], "rec2": [], "shank": [], "ydiff": []}
-    for idx, row in matches.iterrows():
-        recses1 = row["RecSes1"]
-        recses2 = row["RecSes2"]
-        pos1 = positions[recses1]
-        pos2 = positions[recses2]
-        # Get x, y values
-        pos1_vals = pos1.loc[pos1["file"] == row["ID1"], ["x", "y"]]
-        pos2_vals = pos2.loc[pos2["file"] == row["ID2"], ["x", "y"]]
-        if pos1_vals.empty or pos2_vals.empty:
-            # Handle missing data cases
-            continue
-        y1, x1 = pos1_vals.iloc[0]["y"], pos1_vals.iloc[0]["x"]
-        y2, x2 = pos2_vals.iloc[0]["y"], pos2_vals.iloc[0]["x"]
-        shank1 = int(round(x1, -2))
-        shank2 = int(round(x2, -2))
-        if shank1 != shank2:
-            continue  # Skip if shank mismatch
-        dy = y2 - y1
-        # Check if this session pair and shank already exist
-        existing_idx = None
-        for i, (r1, r2, s) in enumerate(zip(drift_correct_dict["rec1"], drift_correct_dict["rec2"], drift_correct_dict["shank"])):
-            if r1 == recses1 and r2 == recses2 and s == shank1:
-                existing_idx = i
-                break
-        if existing_idx is not None:
-            drift_correct_dict["ydiff"][existing_idx].append(dy)
-        else:
-            drift_correct_dict["rec1"].append(recses1)
-            drift_correct_dict["rec2"].append(recses2)
-            drift_correct_dict["shank"].append(shank1)
-            drift_correct_dict["ydiff"].append([dy])
-    # Calculate medians for each ydiff list
-    drift_correct_dict["ydiff"] = [np.median(l) for l in drift_correct_dict["ydiff"]]
-    output = pd.DataFrame(drift_correct_dict)
+    # Pre-process positions dictionaries to avoid repeated lookups
+    pos1 = pd.concat([positions[key].assign(RecSes1=key) for key in positions.keys()], ignore_index=True)
+    pos2 = pos1.rename(columns={"RecSes1": "RecSes2", "x": "x2", "y": "y2", "file": "ID2"})
+
+    # Merge matches with positions data to get all necessary columns in one DataFrame
+    matches = (matches
+               .merge(pos1, left_on=["RecSes1", "ID1"], right_on=["RecSes1", "file"], how="left")
+               .merge(pos2, left_on=["RecSes2", "ID2"], right_on=["RecSes2", "ID2"], how="left"))
+    
+    # Drop rows with missing positions data
+    matches = matches.dropna(subset=["x", "y", "x2", "y2"])
+
+    # Calculate shank and ydiff in a vectorized way
+    matches['shank1'] = matches['x'].round(-2)
+    matches['shank2'] = matches['x2'].round(-2)
+    matches['ydiff'] = matches['y2'] - matches['y']
+
+    # Filter only rows with matching shanks
+    matches = matches[matches['shank1'] == matches['shank2']]
+
+    # Group by session pairs and shank, then calculate median ydiff
+    output = (matches.groupby(['RecSes1', 'RecSes2', 'shank1'])['ydiff']
+              .median()
+              .reset_index()
+              .rename(columns={'shank1': 'shank','RecSes1':'rec1', 'RecSes2':'rec2'}))
     return output
 
 def vectorized_drift_corrected_dist(corrections, positions, matches:pd.DataFrame, nocorr=False):
