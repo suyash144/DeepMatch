@@ -458,11 +458,9 @@ def vectorized_drift_corrected_dist(corrections, positions, matches:pd.DataFrame
         x2=matches.apply(lambda row: positions[row['RecSes2']].loc[positions[row['RecSes2']]['file'] == row['ID2'], 'x'].values[0], axis=1),
         y2=matches.apply(lambda row: positions[row['RecSes2']].loc[positions[row['RecSes2']]['file'] == row['ID2'], 'y'].values[0], axis=1)
     )
-
     # Calculate shanks (rounded x coordinates)
     matches['shank1'] = matches['x1'].round(-2).astype(int)
     matches['shank2'] = matches['x2'].round(-2).astype(int)
-
     # Apply corrections where necessary
     if not nocorr:
         matches["idx"] = matches.index
@@ -482,10 +480,8 @@ def vectorized_drift_corrected_dist(corrections, positions, matches:pd.DataFrame
         )
     else:
         matches['y2_corr'] = matches['y2']
-
     # Calculate the Euclidean distance
     matches['dist'] = np.sqrt((matches['x1'] - matches['x2'])**2 + (matches['y1'] - matches['y2_corr'])**2)
-
     return matches
 
 def drift_corrected_dist(corrections, positions, match, nocorr=False):
@@ -560,7 +556,7 @@ def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
         plt.scatter(delta_days_u, um_auc, c="b", label="UM", s=numbers_u, alpha=0.3)
         plt.xlabel("Delta days")
         plt.ylabel("AUC")
-        plt.ylim((0.36,1.05))
+        plt.ylim((0.5,1.05))
         plt.legend()
         model1 = LinearRegression()
         model1.fit(np.array(delta_days_d).reshape(-1,1), dnn_auc, sample_weight=numbers_d)
@@ -572,8 +568,9 @@ def auc_over_days(mt_path:str, vis:bool, within50:bool=True):
         plt.plot(delta_days_u, line2, label="UM", color="b")
         # sns.regplot(x = delta_days_d, y = dnn_auc, label="DNN", color="r")
         # sns.regplot(x = delta_days_u, y = um_auc, label="UM", color="b")
-        save_path = os.path.join(r"C:\Users\suyas\results_figs", "AV009_inclAV008")
-        plt.savefig(save_path+'.png', format='png')
+        # save_path = os.path.join(r"C:\Users\suyas\results_figs", "AV009_inclAV008")
+        # plt.savefig(save_path+'.png', format='png')
+        plt.show()
     if len(set(delta_days_d)) > 1:
         dnn_slope, dnn_intercept, dnn_r, dnn_p, dnn_std = linregress(delta_days_d, dnn_auc)
     else:

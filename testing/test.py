@@ -177,7 +177,7 @@ def inference_one_pair(rec1:str, rec2:str, model_name:str, device="cpu"):
 
 if __name__ == '__main__':
     # example args to check inference function works
-    base = r"C:\Users\suyas\R_DATA_UnitMatch"
+    base = r"C:\Users\suyas\ALL_DATA"
 
     # AL032 recordings
     # rec1=r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\_2019-11-21_ephys_K1_PyKS_output"
@@ -209,7 +209,7 @@ if __name__ == '__main__':
             for location in locations:
                 name_probe_location = os.path.join(name_probe, location)
                 try:
-                    inference(base, mouse, probe, location, "incl_AV008")
+                    inference(base, mouse, probe, location, "alt10")
                 except:
                     fails.append((mouse, probe, location))
                     print(f"Error for {mouse, probe, location}")
