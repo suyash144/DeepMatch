@@ -7,7 +7,9 @@ from scipy.stats import zscore
 from scipy.stats import fisher_exact
 import mat73
 import h5py
-from utils.myutil import mtpath_to_expids
+from tqdm import tqdm
+from utils.myutil import mtpath_to_expids, get_exp_id
+from utils.read_datapaths import read_datapaths
 
 
 def pairwise_histogram_correlation(A, B):
@@ -39,36 +41,36 @@ goodid = um["UniqueIDConversion"]['GoodID'].astype(bool)
 recses = recsesAll[goodid]
 expids, metadata = mtpath_to_expids(mt_path, mt)
 OriID = um["UniqueIDConversion"]["OriginalClusID"].astype(int)
-
-
-plt.hist(mt['ISICorr'], bins=500)
-plt.show()
-
+df = pd.DataFrame(read_datapaths(['AL031']))
+df = df.loc[df["loc"]=='1']
+exp_dict = {get_exp_id(df["recordings"][0][i], "AL031"):df["recordings"][0][i] for i in range(len(df["recordings"][0]))}
 recompute = True
-nclus = np.sqrt(len(mt))
-if not nclus.is_integer():
-    print("Warning: Match table does not have the expected length. Likely to cause downstream errors.")
-nclus = int(nclus)
+nclus = len(recses)
+if nclus**2 != len(mt):
+    print("Warning - number of good units is inconsistent with length of match table.")
 
 if 'ISICorr' not in mt.columns or recompute:
-    print("Computing ISI, this will take some time...")
 
     # Define ISI bins
-    ISIbins = np.concatenate(([0], 5 * 10 ** np.arange(-4, 0.1, 0.1), [np.inf]))
+    ISIbins = np.concatenate(([0], 5 * 10 ** np.arange(-4, 0.1, 0.1)))
     ISIMat = np.zeros((len(ISIbins) - 1, 2, nclus))
-    insuff_spks = []
-    insuff_fr = []
 
-    for clusid in range(nclus):
+    for clusid in tqdm(range(nclus)):
         session = recses[clusid]
         exp = expids[session]
-        spikes_path = os.path.join(os.path.dirname(mt_path), exp, "spikes.npy")
-        with h5py.File(spikes_path, 'r') as f:
-            clusters = f['spkclus'][()] 
-            times = f['spktimes'][()]
-            times = times/30000                     # divide by 30kHz sampling rate to get sample times in seconds
+        # spikes_path = os.path.join(os.path.dirname(mt_path), exp, "spikes.npy")
+        # with h5py.File(spikes_path, 'r') as f:
+        #     clusters = f['spkclus'][()] 
+        #     times = f['spktimes'][()]
+        # times = times/30000                     # divide by 30kHz sampling rate to get sample times in seconds
+
+        # LOAD PRE-PROCESSED DATA
+        path = os.path.join(exp_dict[exp], "PreparedData.mat")
+        prepdata = mat73.loadmat(path, verbose=False)
+        clusters = prepdata["sp"]["clu"]
+        times = prepdata["sp"]["st"]
         for cv in range(2):
-            idx1 = np.where(clusters == OriID[clusid])[0]
+            idx1 = np.where(clusters == OriID[goodid][clusid])[0]
             if idx1.size > 0:
                 if idx1.size < 50 and cv == 0:
                     print(f"Warning: Fewer than 50 spikes for neuron {clusid}, please check your inclusion criteria")
@@ -79,16 +81,12 @@ if 'ISICorr' not in mt.columns or recompute:
                     idx1 = idx1[len(idx1) // 2:]
                 nspkspersec, _ = np.histogram(times[idx1], bins=np.arange(min(times[idx1]), max(times[idx1]) + 1))
                 ISIMat[:, cv, clusid], _ = np.histogram(np.diff(times[idx1].astype(float)), bins=ISIbins)
-                if sum(ISIMat[:, cv, clusid]) == 0:
-                    if len(idx1) < 2:
-                        insuff_spks.append(clusid)
-                    elif min(np.diff(times[idx1])) > 5:
-                        insuff_fr.append(clusid)
     correlation_matrix = pairwise_histogram_correlation(ISIMat[:, 0, :].T, ISIMat[:, 1, :].T)
     # Correlation between ISIs
     # ISICorr = np.corrcoef(ISIMat[:, 0, :], ISIMat[:, 1, :], rowvar=False)
 
     # Saving results in the DataFrame
     mt.insert(len(mt.columns), 'newISI', correlation_matrix.ravel())
-
-    print("DONE")
+    plt.plot(mt.loc[:500,'newISI'])
+    plt.plot(mt.loc[:500,'ISICorr'])
+    plt.show()
