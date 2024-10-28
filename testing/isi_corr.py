@@ -751,8 +751,8 @@ if __name__ == "__main__":
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "scratch_data")
     # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-    mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable_18mice.csv")
-    # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable_18mice.csv")       # 2497 neurons
+    # mt_path = os.path.join(test_data_root, "AL032", "19011111882", "2", "new_matchtable_18mice.csv")
+    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable_alt10.csv")       # 2497 neurons
     # mt_path = os.path.join(test_data_root, "AV009", "Probe1", "IMRO_10", "new_matchtable.csv")
     # compare_isi_with_dnnsim(mt_path)
     # roc_curve(mt_path, dnn_metric="DNNSim", um_metric="MatchProb", filter=True, dc=True)
