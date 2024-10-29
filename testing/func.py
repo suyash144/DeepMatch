@@ -58,17 +58,11 @@ if 'ISICorr' not in mt.columns or recompute:
     for clusid in tqdm(range(nclus)):
         session = recses[clusid]
         exp = expids[session]
-        # spikes_path = os.path.join(os.path.dirname(mt_path), exp, "spikes.npy")
-        # with h5py.File(spikes_path, 'r') as f:
-        #     clusters = f['spkclus'][()] 
-        #     times = f['spktimes'][()]
-        # times = times/30000                     # divide by 30kHz sampling rate to get sample times in seconds
-
-        # LOAD PRE-PROCESSED DATA
-        path = os.path.join(exp_dict[exp], "PreparedData.mat")
-        prepdata = mat73.loadmat(path, verbose=False)
-        clusters = prepdata["sp"]["clu"]
-        times = prepdata["sp"]["st"]
+        spikes_path = os.path.join(os.path.dirname(mt_path), exp, "spikes.npy")
+        with h5py.File(spikes_path, 'r') as f:
+            clusters = f['spkclus'][()] 
+            times = f['spktimes'][()]
+        times = times/30000                     # divide by 30kHz sampling rate to get sample times in seconds
         for cv in range(2):
             idx1 = np.where(clusters == OriID[goodid][clusid])[0]
             if idx1.size > 0:

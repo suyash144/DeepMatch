@@ -15,8 +15,9 @@ base = r"C:\Users\suyas\ALL_DATA"
 for idx, row in tqdm(df.iterrows(), total=len(df)):
     paths = row["recordings"]
     for path in paths:
-        spktimes = np.load(os.path.join(path, r"spike_times.npy"))
-        spkclus = np.load(os.path.join(path, r"spike_clusters.npy"))
+        prepdata = mat73.loadmat(os.path.join(path, "PreparedData.mat"), verbose=False)
+        spktimes = prepdata["sp"]["st"]
+        spkclus = prepdata["sp"]["clu"]
         data = {
             "spkclus": spkclus,
             "spktimes": spktimes
