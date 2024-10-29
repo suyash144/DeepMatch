@@ -11,6 +11,7 @@ from tqdm import tqdm
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
+    mt = mt.loc[mt["RecSes1"]!=mt["RecSes2"]]
     mt["uid"] = mt["RecSes1"]*1e6 + mt["ID1"]
     unique_ids = mt["uid"].unique()
     func_matches_indices = []
@@ -26,7 +27,7 @@ def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
     return func_matches_indices
 
 def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
-                 um_metric:str="MatchProb", dist_thresh=None, mt_path=None, within50=True):
+                um_metric:str="MatchProb", dist_thresh=None, mt_path=None, within50=True):
     
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
     thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
@@ -58,8 +59,9 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     # Remove split units from each set of matches
     dnn_matches = remove_split_units(mt_path, within, dnn_matches, thresh, "DNNSim")
     um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
-    # Do spatial filtering in DNN
-    dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
+    if len(dnn_matches)!=0:
+        # Do spatial filtering in DNN
+        dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
     # Resolve conflict matches by only keeping the match with highest DNNSim
     dnn_matches, dnn_conflicts = remove_conflicts(dnn_matches, dnn_metric)
     um_matches, um_conflicts = remove_conflicts(um_matches, um_metric)
