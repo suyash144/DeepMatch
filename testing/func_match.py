@@ -20,7 +20,7 @@ def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
         mt[metric] = np.arctanh(mt[metric])
     for id in unique_ids:
         df = mt.loc[mt["uid"]==id,[metric]].nlargest(2, metric)
-        if df.iloc[0].item() - df.iloc[1].item() > 0.1:
+        if df.iloc[0].item() - df.iloc[1].item() > 0.2:
             # only accept a functional match if there is some distance (0.1)
             # between it and the next best correlation value in z-space.
             func_matches_indices.append(df.index[0])
@@ -68,32 +68,30 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     return dnn_matches.index.to_list(), um_matches.index.to_list()
 
-
-if __name__=="__main__":
-    mouse = "AL036"
-    probe = "19011116882"
-    loc = "3"
-
-    # mouse = "AL031"
-    # probe = "19011116684"
-    # loc = "1"
+def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
 
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
     mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
     mt = pd.read_csv(mt_path)
     sessions = mt["RecSes1"].unique()
-    save_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
+    venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
             func = (func_matches(mt, r1, r2, "ISICorr"))
             dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
-
             func, dnn, um = set(func), set(dnn), set(um)
-            venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
-            filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-            savepath = os.path.join(save_dir, mouse, filename)
-            plt.savefig(savepath, bbox_inches='tight')
-            plt.clf()
+            if venn:
+                venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
+                filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
+                savepath = os.path.join(venn_dir, mouse+"stricter", filename)
+                plt.savefig(savepath, bbox_inches='tight')
+                plt.clf()
+            if bar:
+                pass
+
+
+if __name__=="__main__":
+    save_diagrams("AL036", "19011116882", "3", venn=False, bar=True)
