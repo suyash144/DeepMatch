@@ -26,9 +26,9 @@ def pairwise_histogram_correlation(A, B):
     return correlation_matrix
 
 
-mouse = "AL031"
-probe = "19011116684"
-loc = "1"
+mouse = "AL036"
+probe = "19011116882"
+loc = "3"
 
 test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
 server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
@@ -41,9 +41,9 @@ goodid = um["UniqueIDConversion"]['GoodID'].astype(bool)
 recses = recsesAll[goodid]
 expids, metadata = mtpath_to_expids(mt_path, mt)
 OriID = um["UniqueIDConversion"]["OriginalClusID"].astype(int)
-df = pd.DataFrame(read_datapaths(['AL031']))
-df = df.loc[df["loc"]=='1']
-exp_dict = {get_exp_id(df["recordings"][0][i], "AL031"):df["recordings"][0][i] for i in range(len(df["recordings"][0]))}
+df = pd.DataFrame(read_datapaths(['AL036']))
+df = df.loc[df["loc"]=='3']
+exp_dict = {get_exp_id(df["recordings"][2][i], "AL036"):df["recordings"][2][i] for i in range(len(df["recordings"][2]))}
 recompute = True
 nclus = len(recses)
 if nclus**2 != len(mt):
@@ -62,7 +62,6 @@ if 'ISICorr' not in mt.columns or recompute:
         with h5py.File(spikes_path, 'r') as f:
             clusters = f['spkclus'][()] 
             times = f['spktimes'][()]
-        times = times/30000                     # divide by 30kHz sampling rate to get sample times in seconds
         for cv in range(2):
             idx1 = np.where(clusters == OriID[goodid][clusid])[0]
             if idx1.size > 0:
