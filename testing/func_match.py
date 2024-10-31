@@ -108,10 +108,11 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         plt.subplot(1, 2, 2)
         plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
         plt.ylabel("Number of matches found")
+        plt.tight_layout()
         savepath_bar = os.path.join(venn_dir, mouse+"stricter", "barcharts.png")
         plt.savefig(savepath_bar, bbox_inches='tight')
         plt.clf()
 
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=False, bar=True)
+    save_diagrams("AL031", "19011116684", "1", venn=False, bar=True)
