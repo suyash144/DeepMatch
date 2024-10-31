@@ -16,7 +16,7 @@ def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
     mt["uid"] = mt["RecSes1"]*1e6 + mt["ID1"]
     unique_ids = mt["uid"].unique()
     func_matches_indices = []
-    if metric=="ISICorr":
+    if metric=="ISICorr" or metric=="refPopCorr":
         # apply Fisher z-transformation to correlation values
         mt[metric] = np.arctanh(mt[metric])
     for id in unique_ids:
@@ -72,7 +72,6 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
 
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
-    server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
     mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
     mt = pd.read_csv(mt_path)
     sessions = mt["RecSes1"].unique()
@@ -82,16 +81,18 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
-            func = func_matches(mt, r1, r2, "ISICorr")
+            func = func_matches(mt, r1, r2, "refPopCorr")
             dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             func, dnn, um = set(func), set(dnn), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
                 filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-                savepath = os.path.join(venn_dir, mouse+"stricter", filename)
+                savepath = os.path.join(venn_dir, mouse+"_rpc", filename)
                 plt.savefig(savepath, bbox_inches='tight')
                 plt.clf()
             if bar:
+                if len(func)==0:
+                    continue
                 fd = len(dnn.intersection(func))
                 fu = len(um.intersection(func))
                 dnn_perc.append(fd / len(func))
@@ -109,10 +110,10 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
         plt.ylabel("Number of matches found")
         plt.tight_layout()
-        savepath_bar = os.path.join(venn_dir, mouse+"stricter", "barcharts.png")
+        savepath_bar = os.path.join(venn_dir, mouse+"_rpc", "barcharts.png")
         plt.savefig(savepath_bar, bbox_inches='tight')
         plt.clf()
 
 
 if __name__=="__main__":
-    save_diagrams("AL031", "19011116684", "1", venn=False, bar=True)
+    save_diagrams("AL031", "19011116684", "1", venn=True, bar=True)

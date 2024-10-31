@@ -43,6 +43,8 @@ for mouse in tqdm(mice):
             if not os.path.isdir(name_probe_location):
                 continue
             mt_path = os.path.join(name_probe_location, "new_matchtable.csv")
+            if not os.path.exists(mt_path):
+                continue
             mt = pd.read_csv(mt_path)
             if 'newISI' in mt.columns:
                 continue
