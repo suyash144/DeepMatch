@@ -250,8 +250,8 @@ def auc_one_pair(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     matches_across = directional_filter(matches_across)
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
-    matches_across = remove_split_units(mt_path, within, matches_across, thresh, "DNNSim")
-    um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
+    matches_across = remove_split_units(within, matches_across, thresh, "DNNSim")
+    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
     if len(matches_across)==0:
         print("no DNN matches found!")
         return None, None, None, None
@@ -355,7 +355,7 @@ def directional_filter(matches: pd.DataFrame):
             filtered_matches = filtered_matches.drop(idx)  # Drop if no reverse match is found
     return filtered_matches
 
-def remove_split_units(mt_path:str, within:pd.DataFrame, matches:pd.DataFrame, threshold, metric):
+def remove_split_units(within:pd.DataFrame, matches:pd.DataFrame, threshold, metric):
     """
     Takes a dataframe of matches and returns a smaller dataframe with potential split units removed.
     Slightly drastic approach but necessary for the ISI correlation comparisons to make sense.

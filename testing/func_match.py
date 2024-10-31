@@ -6,6 +6,7 @@ from testing.isi_corr import *
 from testing.dnn_dist import *
 from matplotlib_venn import venn3
 from tqdm import tqdm
+from scipy.stats import sem
 
 
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
@@ -57,8 +58,8 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     dnn_matches = directional_filter(dnn_matches)
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
-    dnn_matches = remove_split_units(mt_path, within, dnn_matches, thresh, "DNNSim")
-    um_matches = remove_split_units(mt_path, within, um_matches, thresh_um, "MatchProb")
+    dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
+    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
     if len(dnn_matches)!=0:
         # Do spatial filtering in DNN
         dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
@@ -76,11 +77,12 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
     mt = pd.read_csv(mt_path)
     sessions = mt["RecSes1"].unique()
     venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
+    dnn_perc, um_perc, dnn_n, um_n = [], [], [], []    
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
-            func = (func_matches(mt, r1, r2, "ISICorr"))
+            func = func_matches(mt, r1, r2, "ISICorr")
             dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             func, dnn, um = set(func), set(dnn), set(um)
             if venn:
@@ -90,7 +92,25 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
                 plt.savefig(savepath, bbox_inches='tight')
                 plt.clf()
             if bar:
-                pass
+                fd = len(dnn.intersection(func))
+                fu = len(um.intersection(func))
+                dnn_perc.append(fd / len(func))
+                um_perc.append(fu / len(func))
+                dnn_n.append(len(dnn))
+                um_n.append(len(um))
+    if bar:
+        labels = ["DNN", "UnitMatch"]
+        percs = [np.mean(dnn_perc), np.mean(um_perc), sem(dnn_perc), sem(um_perc)]
+        numbers = [np.mean(dnn_n), np.mean(um_n), sem(dnn_n), sem(um_n)]
+        plt.subplot(1, 2, 1)
+        plt.bar(labels, percs[:2], yerr=percs[2:], capsize=10)
+        plt.ylabel("Percentage of functional matches found")
+        plt.subplot(1, 2, 2)
+        plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
+        plt.ylabel("Number of matches found")
+        savepath_bar = os.path.join(venn_dir, mouse+"stricter", "barcharts.png")
+        plt.savefig(savepath_bar, bbox_inches='tight')
+        plt.clf()
 
 
 if __name__=="__main__":

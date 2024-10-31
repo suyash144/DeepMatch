@@ -77,9 +77,13 @@ if 'ISICorr' not in mt.columns or recompute:
     correlation_matrix = pairwise_histogram_correlation(ISIMat[:, 0, :].T, ISIMat[:, 1, :].T)
     # Correlation between ISIs
     # ISICorr = np.corrcoef(ISIMat[:, 0, :], ISIMat[:, 1, :], rowvar=False)
+    correlation_matrix = np.tanh(0.5*np.arctanh(correlation_matrix) + 0.5*np.arctanh(correlation_matrix.T))
 
     # Saving results in the DataFrame
     mt.insert(len(mt.columns), 'newISI', correlation_matrix.ravel())
     plt.plot(mt.loc[:500,'newISI'])
     plt.plot(mt.loc[:500,'ISICorr'])
     plt.show()
+
+
+    # TODO: write new values into all matchtables.
