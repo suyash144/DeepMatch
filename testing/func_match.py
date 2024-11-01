@@ -9,6 +9,18 @@ from tqdm import tqdm
 from scipy.stats import sem
 
 
+def test_metric(mt:pd.DataFrame, metric):
+    within = mt.loc[mt["RecSes1"]==mt["RecSes2"]]
+
+    same_neuron = within.loc[within["ID1"]==within["ID2"]]
+    diff_neuron = within.loc[within["ID1"]!=within["ID2"]]
+
+    plt.hist(same_neuron[metric], bins=50, alpha=0.4, density=True, label="Same neuron")
+    plt.hist(diff_neuron[metric], bins=50, alpha=0.4, density=True, label="Diff. neurons")
+    plt.xlabel(metric)
+    plt.legend()
+    plt.show()
+
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 
     mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
@@ -81,13 +93,13 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
-            func = func_matches(mt, r1, r2, "refPopCorr")
+            func = func_matches(mt, r1, r2, "ISICorr")
             dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             func, dnn, um = set(func), set(dnn), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
                 filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-                savepath = os.path.join(venn_dir, mouse+"_rpc", filename)
+                savepath = os.path.join(venn_dir, mouse+"stricter", filename)
                 plt.savefig(savepath, bbox_inches='tight')
                 plt.clf()
             if bar:
@@ -105,15 +117,25 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         numbers = [np.mean(dnn_n), np.mean(um_n), sem(dnn_n), sem(um_n)]
         plt.subplot(1, 2, 1)
         plt.bar(labels, percs[:2], yerr=percs[2:], capsize=10)
+        for i in range(len(dnn_perc)):
+            plt.scatter([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7)
+            plt.plot([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7)
         plt.ylabel("Percentage of functional matches found")
         plt.subplot(1, 2, 2)
         plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
+        for i in range(len(dnn_n)):
+            plt.scatter([0, 1], [dnn_n[i], um_n[i]], alpha=0.7)
+            plt.plot([0, 1], [dnn_n[i], um_n[i]], alpha=0.7)
         plt.ylabel("Number of matches found")
         plt.tight_layout()
-        savepath_bar = os.path.join(venn_dir, mouse+"_rpc", "barcharts.png")
+        savepath_bar = os.path.join(venn_dir, mouse+"stricter", "barcharts.png")
         plt.savefig(savepath_bar, bbox_inches='tight')
         plt.clf()
 
 
 if __name__=="__main__":
-    save_diagrams("AL031", "19011116684", "1", venn=True, bar=True)
+    # save_diagrams("AL036", "19011116882", "3", venn=False, bar=True)
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
+    mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    mt = pd.read_csv(mt_path)
+    test_metric(mt, "refPopCorr")
