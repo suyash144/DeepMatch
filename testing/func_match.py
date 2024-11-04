@@ -9,7 +9,7 @@ from tqdm import tqdm
 from scipy.stats import sem
 
 
-def test_metric(mt:pd.DataFrame, metric):
+def test_metric(mt:pd.DataFrame, metric, vis:bool=False, rank:bool=False):
     mt = mt[mt[metric].notnull()]
     within = mt.loc[mt["RecSes1"]==mt["RecSes2"]]
 
@@ -19,12 +19,27 @@ def test_metric(mt:pd.DataFrame, metric):
     same = np.histogram(same_neuron[metric], bins=50, density=True)[0]
     diff = np.histogram(diff_neuron[metric], bins=50, density=True)[0]
     chi_squared_dist = np.sum((same - diff)**2) / np.sum(same + diff)
-    plt.hist(same_neuron[metric], bins=50, alpha=0.4, density=True, label="Same neuron")
-    plt.hist(diff_neuron[metric], bins=50, alpha=0.4, density=True, label="Diff. neurons")
-    plt.xlabel(metric)
-    plt.legend()
+    if vis:
+        plt.hist(same_neuron[metric], bins=50, alpha=0.4, density=True, label="Same neuron")
+        plt.hist(diff_neuron[metric], bins=50, alpha=0.4, density=True, label="Diff. neurons")
+        plt.xlabel(metric)
+        plt.legend()
+        plt.show()
+    mt["uid1"] = mt["RecSes1"]*1e6 + mt["ID1"]
+    mt["uid2"] = mt["RecSes2"]*1e6 + mt["ID2"]
+    uids = mt["uid1"].unique().astype(int)
+    ranks = []
+    for id in uids:
+        try:
+            diag_idx = mt.loc[(mt["uid1"]==id) & (mt["uid2"]==id)].index.item()
+        except:
+            continue
+        ranked = mt.loc[mt["uid1"]==id, metric].rank(ascending=False).astype(int)
+        ranks.append(ranked[diag_idx])
+    plt.hist(ranks, bins = np.arange(1, 20, 0.5))
+    plt.xlabel(f"Rank of diagonal value according to {metric}")
     plt.show()
-    return chi_squared_dist
+    return chi_squared_dist, np.mean(ranks)
 
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 
@@ -147,6 +162,6 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
 if __name__=="__main__":
     # save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
-    mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
     mt = pd.read_csv(mt_path)
-    print(test_metric(mt, "DNNSim"))
+    print(test_metric(mt, "DNNSim", rank=True))
