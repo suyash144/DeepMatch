@@ -10,16 +10,21 @@ from scipy.stats import sem
 
 
 def test_metric(mt:pd.DataFrame, metric):
+    mt = mt[mt[metric].notnull()]
     within = mt.loc[mt["RecSes1"]==mt["RecSes2"]]
 
     same_neuron = within.loc[within["ID1"]==within["ID2"]]
     diff_neuron = within.loc[within["ID1"]!=within["ID2"]]
 
+    same = np.histogram(same_neuron[metric], bins=50, density=True)[0]
+    diff = np.histogram(diff_neuron[metric], bins=50, density=True)[0]
+    chi_squared_dist = np.sum((same - diff)**2) / np.sum(same + diff)
     plt.hist(same_neuron[metric], bins=50, alpha=0.4, density=True, label="Same neuron")
     plt.hist(diff_neuron[metric], bins=50, alpha=0.4, density=True, label="Diff. neurons")
     plt.xlabel(metric)
     plt.legend()
     plt.show()
+    return chi_squared_dist
 
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 
@@ -121,14 +126,14 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
         plt.subplot(1, 2, 1)
         plt.bar(labels, percs[:2], yerr=percs[2:], capsize=10)
         for i in range(len(dnn_perc)):
-            plt.scatter([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7)
-            plt.plot([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7)
+            plt.scatter([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7, c="r")
+            plt.plot([0, 1], [dnn_perc[i], um_perc[i]], "r", alpha=0.7)
         plt.ylabel("Percentage of functional matches found")
         plt.subplot(1, 2, 2)
         plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
         for i in range(len(dnn_n)):
-            plt.scatter([0, 1], [dnn_n[i], um_n[i]], alpha=0.7)
-            plt.plot([0, 1], [dnn_n[i], um_n[i]], alpha=0.7)
+            plt.scatter([0, 1], [dnn_n[i], um_n[i]], alpha=0.7, c="r")
+            plt.plot([0, 1], [dnn_n[i], um_n[i]], "r", alpha=0.7)
         plt.ylabel("Number of matches found")
         plt.tight_layout()
         if save:
@@ -140,8 +145,8 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
 
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
-    # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
-    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-    # mt = pd.read_csv(mt_path)
-    # test_metric(mt, "newISI")
+    # save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
+    mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    mt = pd.read_csv(mt_path)
+    print(test_metric(mt, "DNNSim"))
