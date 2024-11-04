@@ -70,8 +70,8 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     dnn_matches = directional_filter(dnn_matches)
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
-    dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
-    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
+    # dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
+    # um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
     if len(dnn_matches)!=0:
         # Do spatial filtering in DNN
         dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
@@ -81,10 +81,10 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
 
     return dnn_matches.index.to_list(), um_matches.index.to_list()
 
-def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
+def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool):
 
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
-    mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
+    mt_path = os.path.join(test_data_root, mouse, probe, loc, "wentao_model.csv")
     mt = pd.read_csv(mt_path)
     sessions = mt["RecSes1"].unique()
     venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
@@ -93,15 +93,18 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
-            func = func_matches(mt, r1, r2, "ISICorr")
+            func = func_matches(mt, r1, r2, "refPopCorr")
             dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
             func, dnn, um = set(func), set(dnn), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
-                filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-                savepath = os.path.join(venn_dir, mouse+"stricter", filename)
-                plt.savefig(savepath, bbox_inches='tight')
-                plt.clf()
+                if save:
+                    filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
+                    savepath = os.path.join(venn_dir, mouse+"wentao_rpc_wsplits", filename)
+                    plt.savefig(savepath, bbox_inches='tight')
+                    plt.clf()
+                else:
+                    plt.show()
             if bar:
                 if len(func)==0:
                     continue
@@ -128,14 +131,17 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool):
             plt.plot([0, 1], [dnn_n[i], um_n[i]], alpha=0.7)
         plt.ylabel("Number of matches found")
         plt.tight_layout()
-        savepath_bar = os.path.join(venn_dir, mouse+"stricter", "barcharts.png")
-        plt.savefig(savepath_bar, bbox_inches='tight')
-        plt.clf()
+        if save:
+            savepath_bar = os.path.join(venn_dir, mouse+"wentao_rpc_wsplits", "barcharts.png")
+            plt.savefig(savepath_bar, bbox_inches='tight')
+            plt.clf()
+        else:
+            plt.show()
 
 
 if __name__=="__main__":
-    # save_diagrams("AL036", "19011116882", "3", venn=False, bar=True)
-    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
-    mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
-    mt = pd.read_csv(mt_path)
-    test_metric(mt, "refPopCorr")
+    save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
+    # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
+    # mt_path = os.path.join(test_data_root, "AL031", "19011116684", "1", "new_matchtable.csv")
+    # mt = pd.read_csv(mt_path)
+    # test_metric(mt, "newISI")

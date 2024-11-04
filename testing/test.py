@@ -195,22 +195,22 @@ if __name__ == '__main__':
     # inference_one_pair(rec1, rec2, model_name = "incl_AV008")
 
     # to test on one specific SET of recordings (ie one group with same (mouse, probe, loc))
-    # inference(base, "AL031", "19011116684", "1", "incl_AV008")
+    inference(base, "AL032", "19011111882", "2", "wentao")
 
     # to test on ALL sets of recordings
-    mice = os.listdir(base)
-    fails = []
-    for mouse in mice:
-        name_path = os.path.join(base, mouse)
-        probes = os.listdir(name_path)
-        for probe in probes:
-            name_probe = os.path.join(name_path, probe)
-            locations = os.listdir(name_probe)
-            for location in locations:
-                name_probe_location = os.path.join(name_probe, location)
-                try:
-                    inference(base, mouse, probe, location, "alt10")
-                except:
-                    fails.append((mouse, probe, location))
-                    print(f"Error for {mouse, probe, location}")
-    print(fails)
+    # mice = os.listdir(base)
+    # fails = []
+    # for mouse in mice:
+    #     name_path = os.path.join(base, mouse)
+    #     probes = os.listdir(name_path)
+    #     for probe in probes:
+    #         name_probe = os.path.join(name_path, probe)
+    #         locations = os.listdir(name_probe)
+    #         for location in locations:
+    #             name_probe_location = os.path.join(name_probe, location)
+    #             try:
+    #                 inference(base, mouse, probe, location, "alt10")
+    #             except:
+    #                 fails.append((mouse, probe, location))
+    #                 print(f"Error for {mouse, probe, location}")
+    # print(fails)
