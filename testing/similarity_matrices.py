@@ -13,7 +13,10 @@ def create_sim_mat(df, col):
         l1 = len(df["ID1"].unique())
         l2 = len(df["ID2"].unique())
         assert l1 * l2 == len(df)
-    vals = np.array(df[col])
+    if col=="index":
+        vals = np.array(df.index)
+    else:
+        vals = np.array(df[col])
     vals = vals.reshape((l1, l2))
     return vals
 
@@ -56,9 +59,9 @@ def read_depths(mouse, probe, loc):
     depth_df = pd.DataFrame(depth_dict)
     return depth_df
 
-def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "depth", depths = None, vis=False):
+def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "id", depths = None, vis=False):
     """
-    path_to_csv: path to matchtable csv
+    df: matchtable as a pandas DataFrame
     rec1: integer corresponding to the RecSes1 that you want to select
     rec2: integer corresponding to the RecSes2 that you want to select
     sort_method: how you want the results to be sorted (depth or id)
@@ -66,7 +69,6 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "d
     read_depths function.
     """
     # Pick out the relevant columns and ensure they are sorted
-    df = pd.read_csv(path_to_csv)
     col = df.loc[:, "WavformSim":"LocTrajectorySim"]
     df["NoLocScore"] = col.mean(axis=1)
     df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb", "NoLocScore"]]
@@ -77,6 +79,7 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "d
     
     if sort_method == "depth":
         sim_matrix = create_concat_mat(df11, df12, df21, df22, "DNNSim", "depth", rec1, rec2, depths)
+        indices = create_concat_mat(df11, df12, df21, df22, "index", "depth", rec1, rec2, depths)
         um_output = create_concat_mat(df11, df12, df21, df22, "MatchProb", "depth", rec1, rec2, depths)
         um_score = create_concat_mat(df11, df12, df21, df22, "NoLocScore", "depth", rec1, rec2, depths)
     elif sort_method == "id":
@@ -99,7 +102,7 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "d
         ax3.set_title("UnitMatch score (no centroid)")
 
         plt.show()
-    return sim_matrix
+    return sim_matrix, indices
 
 def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
     """
@@ -156,7 +159,7 @@ if __name__=="__main__":
 
     depths = read_depths("AL036", "19011116882", "3")
 
-    sim_matrix = compare_two_recordings(path_to_csv, 19, 20, "depth", depths)
+    sim_matrix,idx = compare_two_recordings(path_to_csv, 19, 20, "depth", depths)
 
     # df = pd.read_csv(path_to_csv)
     # df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]

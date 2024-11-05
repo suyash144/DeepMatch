@@ -43,7 +43,6 @@ def test_metric(mt:pd.DataFrame, metric, vis:bool=False, rank:bool=False):
 
 def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 
-    mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
     mt = mt.loc[mt["RecSes1"]!=mt["RecSes2"]]
     mt["uid"] = mt["RecSes1"]*1e6 + mt["ID1"]
     unique_ids = mt["uid"].unique()
@@ -62,7 +61,6 @@ def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
 def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
                 um_metric:str="MatchProb", dist_thresh=None, mt_path=None, within50=True):
     
-    mt = mt.loc[(mt["RecSes1"].isin([rec1,rec2])) & (mt["RecSes2"].isin([rec1,rec2])),:]
     thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     if um_metric=="MatchProb":
         thresh_um=0.5
@@ -113,8 +111,9 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
                 continue
-            func = func_matches(mt, r1, r2, "refPopCorr")
-            dnn, um = get_matches(mt, r1, r2, mt_path=mt_path, dist_thresh=20)
+            df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
+            func = func_matches(df, r1, r2, "refPopCorr")
+            dnn, um = get_matches(df, r1, r2, mt_path=mt_path, dist_thresh=20)
             func, dnn, um = set(func), set(dnn), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
