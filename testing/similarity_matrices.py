@@ -14,7 +14,7 @@ def create_sim_mat(df, col):
         l2 = len(df["ID2"].unique())
         assert l1 * l2 == len(df)
     if col=="index":
-        vals = np.array(df.index)
+        vals = np.array(df.index).astype(int)
     else:
         vals = np.array(df[col])
     vals = vals.reshape((l1, l2))
