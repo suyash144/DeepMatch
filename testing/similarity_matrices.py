@@ -56,7 +56,7 @@ def read_depths(mouse, probe, loc):
     depth_df = pd.DataFrame(depth_dict)
     return depth_df
 
-def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "id", depths = None):
+def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "depth", depths = None):
     """
     path_to_csv: path to matchtable csv
     rec1: integer corresponding to the RecSes1 that you want to select

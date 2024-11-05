@@ -90,8 +90,8 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     dnn_matches = directional_filter(dnn_matches)
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
-    # dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
-    # um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
+    dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
+    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
     if len(dnn_matches)!=0:
         # Do spatial filtering in DNN
         dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)

@@ -57,7 +57,8 @@ def visualize_re_ft_sim_matrix_all(sim_matrix_11, sim_matrix_12, sim_matrix_21, 
     plt.close()
 
 
-def tracking_method_for_inference_within_day(sim_matrix_within_day,MaxSitepos_within_day,good_units_within_day,mouse,model_name,session_pair,NoMatchThr=0.5):
+def tracking_method_for_inference_within_day(sim_matrix_within_day,MaxSitepos_within_day,good_units_within_day,
+                            mouse,model_name,session_pair,NoMatchThr=0.5):
     pred_pairs = []
     '''
     tracking algorithm with 'sparsification'

@@ -1,6 +1,6 @@
-# DNN tracking unit project
-Train DNN to track the same units across days for Neuropixel recordings
-General idea: use contrastive learning, helped with autoencoders to capture the waveform features
+# Tracking units with a deep neural network
+We train a DNN to track the same units/neurons/clusters across days for Neuropixel recordings.
+The general idea is to use contrastive learning, with autoencoders to capture the waveform features and project them into a latent space.
 
 # data structure
 data and code should be organized like this
