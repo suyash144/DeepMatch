@@ -39,7 +39,7 @@ def read_depths(mouse, probe, loc):
     base = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
     # Find Unitmatch.mat for each recording
     um_path = os.path.join(base, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
-    um = mat73.loadmat(um_path)
+    um = mat73.loadmat(um_path, verbose=False)
     pl = um["WaveformInfo"]["ProjectedLocation"]        # shape [3 x Nclus x 2]
     x = pl[1,:,:]                                      # shape [Nclus x 2]
     y = pl[2,:,:]
@@ -56,7 +56,7 @@ def read_depths(mouse, probe, loc):
     depth_df = pd.DataFrame(depth_dict)
     return depth_df
 
-def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "depth", depths = None):
+def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "depth", depths = None, vis=False):
     """
     path_to_csv: path to matchtable csv
     rec1: integer corresponding to the RecSes1 that you want to select
@@ -87,18 +87,19 @@ def compare_two_recordings(path_to_csv:str, rec1:int, rec2:int, sort_method = "d
         raise ValueError("""Please pick a sorting method from 'depth' or 'id'
                          Default is id as this requires no info about spatial positions of neurons.
                          Depth gives better results though.""")
+    if vis:
+        fig, (ax1, ax2, ax3) = plt.subplots(ncols = 3)
+        ax1.matshow(sim_matrix)
+        ax1.set_title("DNN Similarity matrix")
 
-    fig, (ax1, ax2, ax3) = plt.subplots(ncols = 3)
-    ax1.matshow(sim_matrix)
-    ax1.set_title("DNN Similarity matrix")
+        ax2.matshow(um_output)
+        ax2.set_title("UnitMatch match probabilities")
 
-    ax2.matshow(um_output)
-    ax2.set_title("UnitMatch match probabilities")
+        ax3.matshow(um_score)
+        ax3.set_title("UnitMatch score (no centroid)")
 
-    ax3.matshow(um_score)
-    ax3.set_title("UnitMatch score (no centroid)")
-
-    plt.show()
+        plt.show()
+    return sim_matrix
 
 def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
     """
@@ -135,32 +136,32 @@ def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
     return res
 
         
+if __name__=="__main__":
+    # sims = df["DNNSim"]
+    # probs = df["DNNProb"]
 
-# sims = df["DNNSim"]
-# probs = df["DNNProb"]
+    # # match_fraction = 
 
-# # match_fraction = 
+    # print(sims.quantile(0.99))
 
-# print(sims.quantile(0.99))
-
-# plt.hist(sims, bins = 500)
-# # plt.hist(probs, bins = 500)
-# # plt.show()
-# print(max(probs))
+    # plt.hist(sims, bins = 500)
+    # # plt.hist(probs, bins = 500)
+    # # plt.show()
+    # print(max(probs))
 
 
-# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
-path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
-# df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
+    # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AL032\19011111882\2\new_matchtable.csv")
+    path_to_csv = r"C:\Users\suyas\R_DATA_UnitMatch\AL036\19011116882\3\new_matchtable.csv"
+    # df = pd.read_csv(r"C:\Users\suyas\R_DATA_UnitMatch\AV008\Probe0\IMRO_7\new_matchtable.csv")
 
-depths = read_depths("AL036", "19011116882", "3")
+    depths = read_depths("AL036", "19011116882", "3")
 
-compare_two_recordings(path_to_csv, 19, 20, "depth", depths)
+    sim_matrix = compare_two_recordings(path_to_csv, 19, 20, "depth", depths)
 
-# df = pd.read_csv(path_to_csv)
-# df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
-# df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
-# mat = create_sim_mat(df11, "DNNSim")
-# t = reorder_by_depth(mat, proj_loc, 19, 20)
-# plt.matshow(t)
-# plt.show()
+    # df = pd.read_csv(path_to_csv)
+    # df = df.loc[:, ["RecSes1", "RecSes2", "ID1", "ID2", "DNNSim", "MatchProb"]]
+    # df11 = df.loc[(df["RecSes1"] == 19) & (df["RecSes2"] == 20), :]
+    # mat = create_sim_mat(df11, "DNNSim")
+    # t = reorder_by_depth(mat, proj_loc, 19, 20)
+    # plt.matshow(t)
+    # plt.show()
