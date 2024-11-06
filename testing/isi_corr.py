@@ -318,7 +318,8 @@ def spatial_filter(mt_path:str, matches:pd.DataFrame, dist_thresh=None, drift_co
         drift_corr (bool): Whether to apply drift correction. Defaults to True.
         plot_drift (bool): Whether to plot drift correction visualization. Defaults to False.
     """
-    pos_start = time.time()
+    if len(matches) < 1:
+        return matches
     exp_ids, metadata = mtpath_to_expids(mt_path, matches)
     test_data_root = mt_path[:mt_path.find(metadata["mouse"])]
     positions = {}
