@@ -95,7 +95,7 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     dnn_matches, dnn_conflicts = remove_conflicts(dnn_matches, dnn_metric)
     um_matches, um_conflicts = remove_conflicts(um_matches, um_metric)
 
-    return dnn_matches.index.to_list(), um_matches.index.to_list()
+    return dnn_matches.index.to_list(), um_matches.index.to_list(), thresh
 
 def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool):
 
@@ -112,8 +112,8 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
                 continue
             df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
             func = func_matches(df, r1, r2, "refPopCorr")
-            dnn, um = get_matches(df, r1, r2, mt_path=mt_path, dist_thresh=20)
-            hung = hungarian_matches(df, r1, r2, depths, mt_path)
+            dnn, um, thresh = get_matches(df, r1, r2, mt_path=mt_path, dist_thresh=20)
+            hung = hungarian_matches(df, r1, r2, depths, mt_path, thresh)
             func, dnn, um = set(func), set(hung), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))

@@ -9,10 +9,10 @@ from testing.similarity_matrices import compare_two_recordings, read_depths
 from testing.isi_corr import spatial_filter
 
 
-def hungarian_matches(df, r1, r2, depths, mt_path):
+def hungarian_matches(df, r1, r2, depths, mt_path, thresh):
     sim_matrix, indices = compare_two_recordings(df, r1, r2, "depth", depths)
     # Do spatial steps here
-    matches = hungarian_matching_with_threshold(sim_matrix)
+    matches = hungarian_matching_with_threshold(sim_matrix, thresh)
     hung_idx = [indices[i,j] for i, j in zip(matches[:,0], matches[:,1])]
     hung_matches = df.loc[hung_idx]
     hung = spatial_filter(mt_path, hung_matches, 20, True, False).index.to_list()
