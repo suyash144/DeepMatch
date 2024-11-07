@@ -11,10 +11,10 @@ from testing.isi_corr import spatial_filter
 
 def hungarian_matches(df, r1, r2, depths, mt_path, thresh):
     sim_matrix, indices = compare_two_recordings(df, r1, r2, "depth", depths)
-    matches = hungarian_matching_with_threshold(sim_matrix, thresh)
+    separator = int(np.sqrt(len(df.loc[(df["RecSes1"]==r1) & (df["RecSes2"]==r1)])))
+    matches = hungarian_matching_with_threshold(sim_matrix, thresh, separator)
     hung_idx = [indices[i,j] for i, j in zip(matches[:,0], matches[:,1])]
     hung_matches = df.loc[hung_idx]
-    hung_matches = hung_matches.loc[hung_matches["RecSes1"]!=hung_matches["RecSes2"]]
     if len(hung_matches) > 0:
         hung = spatial_filter(mt_path, hung_matches, 20, True, False).index.to_list()
     else:
