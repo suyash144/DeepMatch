@@ -104,6 +104,18 @@ def compare_two_recordings(df:pd.DataFrame, rec1:int, rec2:int, sort_method = "i
         plt.show()
     return sim_matrix, indices
 
+def get_cross_day_matrices(df:pd.DataFrame, rec1:int, rec2:int, depths = None):
+
+    df11 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec1), :]
+    df12 = df.loc[(df["RecSes1"] == rec1) & (df["RecSes2"] == rec2), :]
+    df21 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec1), :]
+    df22 = df.loc[(df["RecSes1"] == rec2) & (df["RecSes2"] == rec2), :]
+    s12 = reorder_by_depth(create_sim_mat(df12, "DNNSim"), depths, rec1, rec2)
+    s21 = reorder_by_depth(create_sim_mat(df21, "DNNSim"), depths, rec2, rec1)
+    indices = create_concat_mat(df11, df12, df21, df22, "index", "depth", rec1, rec2, depths)
+
+    return s12, s21, indices
+
 def reorder_by_depth(matrix:np.ndarray, depths, recses1:int, recses2:int):
     """
     Matrix should compare just one recording session against another.

@@ -105,7 +105,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
     sessions = mt["RecSes1"].unique()
     depths = read_depths("AL036", "19011116882", "3")
     venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
-    dnn_perc, um_perc, dnn_n, um_n = [], [], [], []    
+    dnn_rec, um_rec, dnn_n, um_n, dnn_prec, um_prec = [], [], [], [], [], []
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
             if r1 >= r2 or abs(r2-r1)>1:
@@ -129,26 +129,35 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
                     continue
                 fd = len(dnn.intersection(func))
                 fu = len(um.intersection(func))
-                dnn_perc.append(fd / len(func))
-                um_perc.append(fu / len(func))
+                dnn_rec.append(fd / len(func))
+                um_rec.append(fu / len(func))
                 dnn_n.append(len(dnn))
                 um_n.append(len(um))
+                dnn_prec.append(fd / len(dnn))
+                um_prec.append(fu / len(um))
     if bar:
         labels = ["DNN", "UnitMatch"]
-        percs = [np.mean(dnn_perc), np.mean(um_perc), sem(dnn_perc), sem(um_perc)]
+        recs = [np.mean(dnn_rec), np.mean(um_rec), sem(dnn_rec), sem(um_rec)]
         numbers = [np.mean(dnn_n), np.mean(um_n), sem(dnn_n), sem(um_n)]
-        plt.subplot(1, 2, 1)
-        plt.bar(labels, percs[:2], yerr=percs[2:], capsize=10)
-        for i in range(len(dnn_perc)):
-            plt.scatter([0, 1], [dnn_perc[i], um_perc[i]], alpha=0.7, c="r")
-            plt.plot([0, 1], [dnn_perc[i], um_perc[i]], "r", alpha=0.7)
-        plt.ylabel("Percentage of functional matches found")
-        plt.subplot(1, 2, 2)
+        precs = [np.mean(dnn_prec), np.mean(um_prec), sem(dnn_prec), sem(um_prec)]
+        plt.subplot(1, 3, 1)
+        plt.bar(labels, recs[:2], yerr=recs[2:], capsize=10)
+        for i in range(len(dnn_rec)):
+            plt.scatter([0, 1], [dnn_rec[i], dnn_rec[i]], alpha=0.7, c="r")
+            plt.plot([0, 1], [dnn_rec[i], dnn_rec[i]], "r", alpha=0.7)
+        plt.ylabel("Recall (percentage of functional matches found)")
+        plt.subplot(1, 3, 2)
         plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
         for i in range(len(dnn_n)):
             plt.scatter([0, 1], [dnn_n[i], um_n[i]], alpha=0.7, c="r")
             plt.plot([0, 1], [dnn_n[i], um_n[i]], "r", alpha=0.7)
         plt.ylabel("Number of matches found")
+        plt.subplot(1, 3, 3)
+        plt.bar(labels, precs[:2], yerr=precs[2:], capsize=10)
+        for i in range(len(dnn_prec)):
+            plt.scatter([0, 1], [dnn_prec[i], um_prec[i]], alpha=0.7, c="r")
+            plt.plot([0, 1], [dnn_prec[i], um_prec[i]], "r", alpha=0.7)
+        plt.ylabel("Precision (percentage of matches found that are functional)")
         plt.tight_layout()
         if save:
             savepath_bar = os.path.join(venn_dir, mouse+"wentao_rpc_wsplits_Hung", "barcharts.png")
@@ -159,7 +168,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
 
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
+    save_diagrams("AL036", "19011116882", "3", venn=False, bar=True, save=True)
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
     # mt = pd.read_csv(mt_path)
