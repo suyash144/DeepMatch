@@ -361,15 +361,16 @@ def get_match_pair_above_SimThr(sim_matrix_1,sim_matrix_2,day1_MaxSitepos,day2_M
     np.save(os.path.join(results_save_folder,filename),match_pair)
     return match_pair
 
-def hungarian_matching_with_threshold(similarity_matrix, similarity_threshold, separator):
+def hungarian_matching_with_threshold(similarity_matrix, similarity_threshold, separator=None):
     N, M = similarity_matrix.shape
     max_dim = max(N, M)
     # Convert similarity to cost and apply threshold
     high_cost = 1e9  # A very large cost for unacceptable pairs
     cost_matrix = np.where(similarity_matrix >= similarity_threshold, 1 - similarity_matrix, high_cost)
-    # Assign high cost to all the within-day pairs so these aren't selected
-    cost_matrix[:separator, :separator] = high_cost
-    cost_matrix[separator:, separator:] = high_cost
+    if separator:
+        # Assign high cost to all the within-day pairs so these aren't selected
+        cost_matrix[:separator, :separator] = high_cost
+        cost_matrix[separator:, separator:] = high_cost
     # Pad the matrix to make it square if necessary
     if N != M:
         padded_cost_matrix = np.pad(cost_matrix, ((0, max_dim - N), (0, max_dim - M)), mode='constant', constant_values=high_cost)

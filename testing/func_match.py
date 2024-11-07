@@ -48,7 +48,7 @@ def func_matches(matchtable:pd.DataFrame, metric:str, thresh=None):
     mt = matchtable.loc[matchtable["RecSes1"]!=matchtable["RecSes2"]]
     if thresh:
         within = mt.loc[mt["RecSes1"]==mt["RecSes2"]]
-        mt = remove_split_units(within, mt, thresh, metric)
+        mt = remove_split_units(within, mt, thresh, "DNNSim")
     mt["uid"] = mt["RecSes1"]*1e6 + mt["ID1"]
     unique_ids = mt["uid"].unique()
     func_matches_indices = []
@@ -89,7 +89,7 @@ def get_matches(mt:pd.DataFrame, dnn_metric:str="DNNSim", um_metric:str="MatchPr
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
     dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
-    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
+    um_matches = remove_split_units(within, um_matches, thresh, "DNNSim")
     if len(dnn_matches)!=0:
         # Do spatial filtering in DNN
         dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
