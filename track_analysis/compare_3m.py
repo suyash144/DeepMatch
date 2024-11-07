@@ -45,6 +45,15 @@ def load_match_pair_dnn(mouse,model_name,session_pair):
     match_pair = np.load(os.path.join(results_save_folder,filename))
     return match_pair
 
+def load_matches(mouse,session_pair,method, model_name=None):
+    if method=="dnn":
+        results_save_folder = os.path.join(os.path.dirname(os.getcwd()),'results', method, model_name, mouse)
+    else:
+        results_save_folder = os.path.join(os.getcwd(),os.pardir,'results',method,mouse)
+    filename = 'match_pair_'+ 'session_pair' + session_pair + '.npy'
+    match_pair = np.load(os.path.join(results_save_folder,filename))
+    return match_pair
+
 def plot_comparison_pairs_venn3(pred_unitmatch, pred_dnn, pred_func, mouse, model_name, session_pair, len_good_units_1, len_good_units_2, plot=True, save=False):
     """
     Plots three arrays for comparison.
@@ -119,30 +128,37 @@ def plot_comparison_pairs_venn3(pred_unitmatch, pred_dnn, pred_func, mouse, mode
 if __name__ == '__main__':
     # train
     mode = 'test' # 'train' or 'test'
-    mouse = 'AL031'
-    probe = '19011116684'
-    location = '1'
-    dates = ['2019-10-01', '2019-10-02']
-    exp_ids = [r"_2019-10-01_1__2019-10-01_bank0_g0__2019-10-01_bank0_g0_imec0_PyKS_output", 
-            r"_2019-10-02_1__2019-10-02_bank0_g0__2019-10-02_bank0_g0_imec0_PyKS_output"]
+    # mouse = 'AL031'
+    # probe = '19011116684'
+    # location = '1'
+    # dates = ['2019-10-01', '2019-10-02']
+    # exp_ids = [r"_2019-10-01_1__2019-10-01_bank0_g0__2019-10-01_bank0_g0_imec0_PyKS_output", 
+    #         r"_2019-10-02_1__2019-10-02_bank0_g0__2019-10-02_bank0_g0_imec0_PyKS_output"]
+    # session_pair = '2'
+    mouse = 'AL036'
+    probe = '19011116882'
+    location = '3'
+    dates = ['2020-02-24', '2020-02-25']
+    exps = ['_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output', 
+            '_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output']
     session_pair = '2'
     print('mouse', mouse, 'session_pair', session_pair)
 
     # read good id
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exp_ids,mode)
+    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,mode)
     len_good_units_1 = len(good_units_files_1)
     len_good_units_2 = len(good_units_files_2)
 
     # load match pair from unitmatch
-    match_pair_unitmatch = load_match_pair_unitmatch(mouse,session_pair)
+    match_pair_unitmatch = load_matches(mouse,session_pair, "unitmatch")
     # load match pair from functional measures
     # match_pair_func = load_match_pair_func(mouse,session_pair)
     # match_pair_func = load_match_pair_func_Sig(mouse,session_pair)
-    match_pair_func = load_match_pair_func_Diff(mouse,session_pair)
+    match_pair_func = load_matches(mouse,session_pair, "func_Diff")
     # load match pair from dnn
-    model_name = '2024_2_13_ag_ft_SpatioTemporalCNN_V2'
+    model_name = 'wentao'
     # model_name = '2024_2_13_ft_SpatioTemporalCNN_V2'
-    match_pair_dnn = load_match_pair_dnn(mouse,model_name,session_pair)
+    match_pair_dnn = load_matches(mouse,session_pair, "dnn", model_name)
 
     # plot comparison (venn 3)
     overlap_all, unique_unitmatch, unique_dnn, unique_func, overlap_unitmatch_dnn, overlap_unitmatch_func, overlap_dnn_func = plot_comparison_pairs_venn3(match_pair_unitmatch, match_pair_dnn, match_pair_func, mouse, model_name, session_pair, len_good_units_1,len_good_units_2,plot=True, save=True)
