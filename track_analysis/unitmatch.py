@@ -14,7 +14,7 @@ if __name__ == '__main__':
 from utils.myutil import *
 
 def read_MatchTable_from_csv(mouse, session_pair):
-    base_load = os.path.join(os.getcwd(), os.pardir, os.pardir)
+    base_load = os.path.dirname(os.getcwd())
     base_load_mouse = os.path.join(base_load, 'Save_UnitMatch', mouse,'session_pair_'+str(session_pair))
     base_load_data = os.path.join(base_load_mouse, 'MatchTable.csv')
     MatchTable = pd.read_csv(base_load_data)
@@ -22,7 +22,7 @@ def read_MatchTable_from_csv(mouse, session_pair):
 
 def read_UnitMatch_matfile_v73(mouse, session_pair):
     # Open the HDF5 MATLAB file
-    base_load = os.path.join(os.getcwd(), os.pardir, os.pardir)
+    base_load = os.path.dirname(os.getcwd())
     base_load_mouse = os.path.join(base_load, 'Save_UnitMatch', mouse,'session_pair_'+str(session_pair))
     base_load_data = os.path.join(base_load_mouse, 'UnitMatch.mat')
     with h5py.File(base_load_data, 'r') as f:
@@ -213,13 +213,21 @@ def get_unique_match_pair_unitmatch(MatchTable,mouse,session_pair,thr = 0.0001):
 
 if __name__ == '__main__':
     mode = 'test' # 'train' or 'test'
-    mouse = 'AV007'
-    probe = '19011119461'
-    location = '11'
-    dates = ['2022-04-06', '2022-04-07']
-    exps = ['AV007_2022-04-06_ActivePassive_g0_t0-imec1-ap', 
-            'AV007_2022-04-07_ActivePassive_g0_t0-imec1-ap']
-    session_pair = '2'
+    # mouse = 'AV007'
+    # probe = '19011119461'
+    # location = '11'
+    # dates = ['2022-04-06', '2022-04-07']
+    # exps = ['AV007_2022-04-06_ActivePassive_g0_t0-imec1-ap', 
+    #         'AV007_2022-04-07_ActivePassive_g0_t0-imec1-ap']
+    # session_pair = '2'
+
+    mouse = 'AL036'
+    probe = '19011116882'
+    location = '3'
+    dates = ['2020-02-24', '2020-02-25']
+    exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
+            'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
+    session_pair = '1'
     print('mouse', mouse, 'session_pair', session_pair)
 
     # MatchTable = read_MatchTable_from_csv(mouse, session_pair)
@@ -256,10 +264,10 @@ if __name__ == '__main__':
     # read UniqueID, OriID, recses
     UniqueID, OriID, recses = read_UnitMatch_matfile_v73(mouse, session_pair)
     Pairs = matlab_get_pairs(UniqueID)
-    Pairs_list = [arr.tolist() for arr in Pairs]
-    print('Pairs_list', Pairs_list)
-    # match_pairs = organize_pairs_from_matlab(Pairs, UniqueID, OriID, recses,mouse, session_pair)
-    # match_pairs = match_pairs.tolist()
-    # print('match_pairs', match_pairs)
-    # print('len', len(match_pairs))
+    # Pairs_list = [arr.tolist() for arr in Pairs]
+    # print('Pairs_list', Pairs_list)
+    match_pairs = organize_pairs_from_matlab(Pairs, UniqueID, OriID, recses,mouse, session_pair)
+    match_pairs = match_pairs.tolist()
+    print('match_pairs', match_pairs)
+    print('len', len(match_pairs))
 
