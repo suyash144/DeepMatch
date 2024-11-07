@@ -10,8 +10,7 @@ import h5py
 
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.path.join(os.pardir, os.pardir))
-    sys.path.insert(0, os.path.join(os.pardir))
+    sys.path.insert(0, os.getcwd())
 
 from utils.myutil import *
 from unitmatch import read_MatchTable_from_csv
@@ -108,12 +107,19 @@ def find_match_pairs_func_Diff(MatchTable,session_pair):
 if __name__ == '__main__':
     # train
     mode = 'test' # 'train' or 'test'
-    mouse = 'AV013'
-    probe = '19011119461'
-    location = '8'
-    dates = ['2022-06-09', '2022-06-10']
-    exps = ['AV013_2022-06-09_ActivePassive_g0_t0-imec0-ap', 
-            'AV013_2022-06-10_ActivePassive_g0_t0-imec0-ap']
+    # mouse = 'AV013'
+    # probe = '19011119461'
+    # location = '8'
+    # dates = ['2022-06-09', '2022-06-10']
+    # exps = ['AV013_2022-06-09_ActivePassive_g0_t0-imec0-ap', 
+    #         'AV013_2022-06-10_ActivePassive_g0_t0-imec0-ap']
+    # session_pair = '2'
+    mouse = 'AL036'
+    probe = '19011116882'
+    location = '3'
+    dates = ['2020-08-04', '2020-08-05']
+    exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
+            'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
     session_pair = '2'
     print('mouse', mouse, 'session_pair', session_pair)
     MatchTable = read_MatchTable_from_csv(mouse, session_pair)

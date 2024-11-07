@@ -224,10 +224,10 @@ if __name__ == '__main__':
     mouse = 'AL036'
     probe = '19011116882'
     location = '3'
-    dates = ['2020-02-24', '2020-02-25']
-    exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
-            'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
-    session_pair = '1'
+    dates = ['2020-08-04', '2020-08-05']
+    exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
+            'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
+    session_pair = '2'
     print('mouse', mouse, 'session_pair', session_pair)
 
     # MatchTable = read_MatchTable_from_csv(mouse, session_pair)

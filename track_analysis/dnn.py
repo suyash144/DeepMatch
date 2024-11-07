@@ -415,7 +415,7 @@ def tracking_method_for_inference(sim_matrix_12,sim_matrix_21,day1_MaxSitepos,da
 if __name__ == '__main__':
     base = os.getcwd()
     # load model
-    model_name = 'incl_AV008'
+    model_name = 'wentao'
     # model_name = '2024_2_13_ft_SpatioTemporalCNN_V2'
     ckpt_path = os.path.join('ModelExp','experiments', model_name, 'ckpt', 'ckpt_epoch_49')
     ckpt_path = os.path.join(base, ckpt_path)
@@ -426,17 +426,12 @@ if __name__ == '__main__':
     mouse = 'AL036'
     probe = '19011116882'
     location = '3'
-    # dates = ['2020-08-04', '2020-08-05']
-    # exps = ['AL036_2020-08-04_stripe240r1_natIm_g0_t0-imec0-ap', 
-    #         'AL036_2020-08-05_stripe240_natIm_g0_t0-imec0-ap']
-    # exps = ["_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output",
-    #         "_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output"]
-    exps = ['_2020-07-01_ephys__2020-07-01_stripe240_natIm_g0__2020-07-01_stripe240_natIm_g0_imec0_PyKS_output',
-            "_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output"]
+    dates = ['2020-08-04', '2020-08-05']
+    exps = ['_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output', 
+            '_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output']
     session_pair = '2'
-
     print('mouse',mouse,'session_pair',session_pair)
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,"train")
+    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,mode)
     rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half = get_representation_dnn(model,good_units_files_1,good_units_files_2)
     sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22 = get_sim_matrix_all(rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half)
     del rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half
@@ -500,24 +495,25 @@ if __name__ == '__main__':
 
     # Hungarian tracking method
     pred_pairs = tracking_method_for_inference(sim_matrix_12,sim_matrix_21,day1_MaxSitepos,day2_MaxSitepos,good_units_indices_1,good_units_indices_2,mouse,model_name,session_pair,NoMatchThr=across_day_sim_thr)
-    # print('pred_pairs',pred_pairs)
-    # print('len(pred_pairs)',len(pred_pairs))
+    print('pred_pairs',pred_pairs)
+    print('len(pred_pairs)',len(pred_pairs))
 
     # Similarity threshold tracking method
     # artifical_thr = 0.8
     # match_pair = get_match_pair_above_SimThr(sim_matrix_12, sim_matrix_21, day1_MaxSitepos, day2_MaxSitepos, good_units_indices_1, good_units_indices_2,mouse,model_name,session_pair,thr=artifical_thr)
 
-    sim_matrix_across_days = (sim_matrix_12 + sim_matrix_21) / 2
-    pair_index_1 = find_index_np(132,good_units_indices_1)
-    pair_index_2 = find_index_np(139,good_units_indices_2)
-    median_value_within_day = np.round(median_value_within_day,4)
-    within_day_sim_thr = np.round(within_day_sim_thr,4)
-    median_value_across_day = np.round(median_value_across_day,4)
-    across_day_sim_thr = np.round(across_day_sim_thr,4)
-    sim_value = np.round(sim_matrix_across_days[pair_index_1,pair_index_2],4) + 0.9
+    # sim_matrix_across_days = (sim_matrix_12 + sim_matrix_21) / 2
+    # pair_index_1 = find_index_np(132,good_units_indices_1)
+    # pair_index_2 = find_index_np(139,good_units_indices_2)
+    # median_value_within_day = np.round(median_value_within_day,4)
+    # within_day_sim_thr = np.round(within_day_sim_thr,4)
+    # median_value_across_day = np.round(median_value_across_day,4)
+    # across_day_sim_thr = np.round(across_day_sim_thr,4)
+    # sim_value = np.round(sim_matrix_across_days[pair_index_1,pair_index_2],4) + 0.9
     # print('median_value_within_day',median_value_within_day)
     # print('within_day_sim_thr',within_day_sim_thr)
     # print('median_value_across_day',median_value_across_day)
     # print('across_day_sim_thr',across_day_sim_thr)
     # print('sim value of pair [132,139]',sim_value)
-    print(pred_pairs)
+    # print(pred_pairs)
+    # print(len(pred_pairs))
