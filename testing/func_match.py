@@ -43,9 +43,12 @@ def test_metric(mt:pd.DataFrame, metric, vis:bool=False, rank:bool=False):
     plt.show()
     return chi_squared_dist, np.mean(ranks)
 
-def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
+def func_matches(matchtable:pd.DataFrame, metric:str, thresh=None):
 
-    mt = mt.loc[mt["RecSes1"]!=mt["RecSes2"]]
+    mt = matchtable.loc[matchtable["RecSes1"]!=matchtable["RecSes2"]]
+    if thresh:
+        within = mt.loc[mt["RecSes1"]==mt["RecSes2"]]
+        mt = remove_split_units(within, mt, thresh, metric)
     mt["uid"] = mt["RecSes1"]*1e6 + mt["ID1"]
     unique_ids = mt["uid"].unique()
     func_matches_indices = []
@@ -55,13 +58,12 @@ def func_matches(mt:pd.DataFrame, rec1:int, rec2:int, metric:str):
     for id in unique_ids:
         df = mt.loc[mt["uid"]==id,[metric]].nlargest(2, metric)
         if df.iloc[0].item() - df.iloc[1].item() > 0.2:
-            # only accept a functional match if there is some distance (0.1)
+            # only accept a functional match if there is some distance (0.2)
             # between it and the next best correlation value in z-space.
             func_matches_indices.append(df.index[0])
     return func_matches_indices
 
-def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim", 
-                um_metric:str="MatchProb", dist_thresh=None, mt_path=None):
+def get_matches(mt:pd.DataFrame, dnn_metric:str="DNNSim", um_metric:str="MatchProb", dist_thresh=None, mt_path=None):
     
     thresh = dnn_dist.get_threshold(mt, metric=dnn_metric, vis=False)
     if um_metric=="MatchProb":
@@ -86,8 +88,8 @@ def get_matches(mt:pd.DataFrame, rec1:int, rec2:int, dnn_metric:str="DNNSim",
     dnn_matches = directional_filter(dnn_matches)
     um_matches = directional_filter(um_matches)
     # Remove split units from each set of matches
-    # dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
-    # um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
+    dnn_matches = remove_split_units(within, dnn_matches, thresh, "DNNSim")
+    um_matches = remove_split_units(within, um_matches, thresh_um, "MatchProb")
     if len(dnn_matches)!=0:
         # Do spatial filtering in DNN
         dnn_matches = spatial_filter(mt_path, dnn_matches, dist_thresh, plot_drift=False)
@@ -108,18 +110,20 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
     dnn_rec, um_rec, dnn_n, um_n, dnn_prec, um_prec = [], [], [], [], [], []
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
-            if r1 >= r2 or abs(r2-r1)>1:
+            if r1!=4 or r2 !=6:            # to compare same sessions as Wentao
                 continue
+            # if r1 >= r2 or abs(r2-r1)>1:
+            #     continue
             df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
-            func = func_matches(df, r1, r2, "refPopCorr")
-            dnn, um, thresh = get_matches(df, r1, r2, mt_path=mt_path, dist_thresh=20)
+            dnn, um, thresh = get_matches(df, mt_path=mt_path, dist_thresh=20)
+            func = func_matches(df, "refPopCorr", thresh)
             hung = hungarian_matches(df, r1, r2, depths, mt_path, thresh)
             func, dnn, um = set(func), set(hung), set(um)
             if venn:
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
                 if save:
                     filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-                    savepath = os.path.join(venn_dir, mouse+"wentao_rpc_wsplits_Hung", filename)
+                    savepath = os.path.join(venn_dir, mouse+"rpc_allSplitsOut_Hung", filename)
                     plt.savefig(savepath, bbox_inches='tight')
                     plt.clf()
                 else:
@@ -160,7 +164,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
         plt.ylabel("Precision (percentage of matches found that are functional)")
         plt.tight_layout()
         if save:
-            savepath_bar = os.path.join(venn_dir, mouse+"wentao_rpc_wsplits_Hung", "barcharts.png")
+            savepath_bar = os.path.join(venn_dir, mouse+"rpc_allSplitsOut_Hung", "barcharts.png")
             plt.savefig(savepath_bar, bbox_inches='tight')
             plt.clf()
         else:
@@ -168,7 +172,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
 
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=False, bar=True, save=True)
+    save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
     # mt = pd.read_csv(mt_path)

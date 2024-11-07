@@ -6,7 +6,7 @@ from tqdm import tqdm
 sys.path.insert(0, os.getcwd())
 from track_analysis.dnn import hungarian_matching_with_threshold
 from testing.similarity_matrices import compare_two_recordings, read_depths
-from testing.isi_corr import spatial_filter
+from testing.isi_corr import spatial_filter, remove_split_units
 
 
 def hungarian_matches(df, r1, r2, depths, mt_path, thresh):
@@ -15,6 +15,8 @@ def hungarian_matches(df, r1, r2, depths, mt_path, thresh):
     matches = hungarian_matching_with_threshold(sim_matrix, thresh, separator)
     hung_idx = [indices[i,j] for i, j in zip(matches[:,0], matches[:,1])]
     hung_matches = df.loc[hung_idx]
+    within = df.loc[df["RecSes1"]==df["RecSes2"]]
+    hung_matches = remove_split_units(within, hung_matches, thresh, "DNNSim")
     if len(hung_matches) > 0:
         hung = spatial_filter(mt_path, hung_matches, 20, True, False).index.to_list()
     else:
