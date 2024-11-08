@@ -139,9 +139,9 @@ if __name__ == '__main__':
     probe = '19011116882'
     location = '3'
     dates = ['2020-02-24', '2020-02-25']
-    exps = ['_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output', 
-            '_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output']
-    session_pair = '2'
+    exps = ['_2020-02-24_ephys_stripe240_PyKS_output', 
+            '_2020-02-25_ephys__2020-02-25_stripe240_NatIm_g0__2020-02-25_stripe240_NatIm_g0_imec0_PyKS_output']
+    session_pair = '1'
     print('mouse', mouse, 'session_pair', session_pair)
 
     # read good id

@@ -426,10 +426,10 @@ if __name__ == '__main__':
     mouse = 'AL036'
     probe = '19011116882'
     location = '3'
-    dates = ['2020-08-04', '2020-08-05']
-    exps = ['_2020-08-04_ephys__2020-08-04_stripe240r1_natIm_g0_imec0_PyKS_output', 
-            '_2020-08-05_ephys__2020-08-05_stripe240_natIm_g0__2020-08-05_stripe240_natIm_g0_imec0_PyKS_output']
-    session_pair = '2'
+    dates = ['2020-02-24', '2020-02-25']
+    exps = ['_2020-02-24_ephys_stripe240_PyKS_output', 
+            '_2020-02-25_ephys__2020-02-25_stripe240_NatIm_g0__2020-02-25_stripe240_NatIm_g0_imec0_PyKS_output']
+    session_pair = '1'
     print('mouse',mouse,'session_pair',session_pair)
     good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,mode)
     rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half = get_representation_dnn(model,good_units_files_1,good_units_files_2)

@@ -115,10 +115,10 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
     dnn_rec, um_rec, dnn_n, um_n, dnn_prec, um_prec = [], [], [], [], [], []
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
-            # if r1!=20 or r2 !=21:            # to compare same sessions as Wentao
-            #     continue
-            if r1 >= r2 or abs(r2-r1)>1:
+            if r1!=4 or r2 !=6:            # to compare same sessions as Wentao
                 continue
+            # if r1 >= r2 or abs(r2-r1)>1:
+            #     continue
             df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
             dnn, um, thresh = get_matches(df, mt_path=mt_path, dist_thresh=20)
             func = func_matches(df, "refPopCorr")
@@ -177,7 +177,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
 
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=True, bar=True, save=True)
+    save_diagrams("AL036", "19011116882", "3", venn=True, bar=False, save=True)
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
     # mt = pd.read_csv(mt_path)
