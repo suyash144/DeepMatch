@@ -221,15 +221,26 @@ if __name__ == '__main__':
     #         'AV007_2022-04-07_ActivePassive_g0_t0-imec1-ap']
     # session_pair = '2'
 
-    mouse = 'AL036'
-    probe = '19011116882'
-    location = '3'
-    dates = ['2020-02-24', '2020-02-25']
-    exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
-            'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
-    session_pair = '1'
-    print('mouse', mouse, 'session_pair', session_pair)
-
+    # mouse = 'AL036'
+    # probe = '19011116882'
+    # location = '3'
+    # dates = ['2020-02-24', '2020-02-25']
+    # exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
+    #         'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
+    # session_pair = '1'
+    # print('mouse', mouse, 'session_pair', session_pair)
+    pairs = pd.read_csv(r"C:\Users\suyas\Save_UnitMatch\pairs.csv")
+    for idx, row in pairs.iterrows():
+        mouse = row["mouse"]
+        session_pair = row["sessionpair"]
+        try:
+            UniqueID, OriID, recses = read_UnitMatch_matfile_v73(mouse, session_pair)
+            Pairs = matlab_get_pairs(UniqueID)
+            # Pairs_list = [arr.tolist() for arr in Pairs]
+            # print('Pairs_list', Pairs_list)
+            match_pairs = organize_pairs_from_matlab(Pairs, UniqueID, OriID, recses,mouse, session_pair)
+        except:
+            continue
     # MatchTable = read_MatchTable_from_csv(mouse, session_pair)
     # # read good id
     # good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,dates,exps,mode)

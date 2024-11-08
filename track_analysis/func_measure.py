@@ -114,23 +114,25 @@ if __name__ == '__main__':
     # exps = ['AV013_2022-06-09_ActivePassive_g0_t0-imec0-ap', 
     #         'AV013_2022-06-10_ActivePassive_g0_t0-imec0-ap']
     # session_pair = '2'
-    mouse = 'AL036'
-    probe = '19011116882'
-    location = '3'
-    dates = ['2020-02-24', '2020-02-25']
-    exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
-            'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
-    session_pair = '1'
-    print('mouse', mouse, 'session_pair', session_pair)
-    MatchTable = read_MatchTable_from_csv(mouse, session_pair)
-    # # method 1 and 2, which don't use rank 2 information
-    # MatchTable = filter_MatchTable_by_refpop(MatchTable)
-    # match_pair = find_match_pairs_func(MatchTable,session_pair)
-    # match_pair = find_match_pairs_func_Sig(MatchTable,session_pair)
-
-    # method 3, which use rank 2 information
-    MatchTable = filter_MatchTable_by_refpop2(MatchTable)
-    match_pair = find_match_pairs_func_Diff(MatchTable,session_pair)
+    # mouse = 'AL036'
+    # probe = '19011116882'
+    # location = '3'
+    # dates = ['2020-02-24', '2020-02-25']
+    # exps = ['AL036_2020-02-24_stripe240_NatIm_g0_t0-imec0-ap', 
+    #         'AL036_2020-02-25_stripe240_NatIm_g0_t0-imec0-ap']
+    # session_pair = '1'
+    # print('mouse', mouse, 'session_pair', session_pair)
+    pairs = pd.read_csv(r"C:\Users\suyas\Save_UnitMatch\pairs.csv")
+    for idx, row in pairs.iterrows():
+        mouse = row["mouse"]
+        session_pair = row["sessionpair"]
+        try:
+            MatchTable = read_MatchTable_from_csv(mouse, session_pair)
+            # method 3, which use rank 2 information
+            MatchTable = filter_MatchTable_by_refpop2(MatchTable)
+            match_pair = find_match_pairs_func_Diff(MatchTable,session_pair)
+        except:
+            continue
 
     # # save the filtered MatchTable to csv
     # results_save_folder = os.path.join(os.getcwd(),os.pardir,'results','func',mouse)

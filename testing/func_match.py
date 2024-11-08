@@ -185,8 +185,6 @@ def test_wentao_pairs():
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
 
     for idx, row in tqdm(pairs.iterrows(), total=len(pairs)):
-        if idx < 6:
-            continue
         mouse, probe, loc = row["mouse"], row["probe"], row["loc"]
         um_path = os.path.join(server_root, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
         um = mat73.loadmat(um_path, verbose=False)

@@ -98,7 +98,7 @@ def visualize_sim_matrix_all(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_ma
     ax.tick_params(**tick_params_dict)
     # fig.colorbar(img0, ax=ax[0])
     plt.colorbar(img0, ax=ax, orientation='horizontal')
-    fig_save_folder = os.path.join(os.getcwd(),os.pardir,'figures','dnn',model_name,mouse,'session_pair'+session_pair)
+    fig_save_folder = os.path.join(os.getcwd(),os.pardir,'figures','dnn',model_name,mouse,'session_pair'+str(session_pair))
     if not os.path.exists(fig_save_folder):
         os.makedirs(fig_save_folder, exist_ok=True)
     filename = 'similarity_matrix_across_days_'+ mouse +'.png'
@@ -162,7 +162,7 @@ def get_sim_distribution_within_day_tg(sim_matrix, combined_neurons, mouse,probe
     ax.set_xlabel('Similarity', fontsize = fontsize)
     ax.set_ylabel('Probability Density', fontsize = fontsize)
     ax.legend(fontsize = fontsize)
-    fig_save_folder = os.path.join(os.getcwd(),os.pardir,'figures','dnn',model_name,mouse,'session_pair'+session_pair)
+    fig_save_folder = os.path.join(os.getcwd(),os.pardir,'figures','dnn',model_name,mouse,'session_pair'+str(session_pair))
     if not os.path.exists(fig_save_folder):
         os.makedirs(fig_save_folder, exist_ok=True)
     # exact_day = dates[days_index]
@@ -325,7 +325,7 @@ def get_sim_distribution_intersect(sim_matrix,neighboring_neurons,mouse,probe,lo
     ax.set_xlabel('Similarity', fontsize=fontsize)
     ax.set_ylabel('Number of Pairs', fontsize=fontsize)
     ax.legend(fontsize=fontsize)
-    fig_save_folder = os.path.join(os.getcwd(), os.pardir, 'figures', 'dnn', model_name, mouse, 'session_pair' + session_pair)
+    fig_save_folder = os.path.join(os.getcwd(), os.pardir, 'figures', 'dnn', model_name, mouse, 'session_pair' + str(session_pair))
     if not os.path.exists(fig_save_folder):
         os.makedirs(fig_save_folder, exist_ok=True)
     # exact_day = dates[days_index]
@@ -423,97 +423,105 @@ if __name__ == '__main__':
 
     # load data
     mode = 'test' # 'train' or 'test'
-    mouse = 'AL036'
-    probe = '19011116882'
-    location = '3'
-    dates = ['2020-02-24', '2020-02-25']
-    exps = ['_2020-02-24_ephys_stripe240_PyKS_output', 
-            '_2020-02-25_ephys__2020-02-25_stripe240_NatIm_g0__2020-02-25_stripe240_NatIm_g0_imec0_PyKS_output']
-    session_pair = '1'
-    print('mouse',mouse,'session_pair',session_pair)
-    good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,mode)
-    rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half = get_representation_dnn(model,good_units_files_1,good_units_files_2)
-    sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22 = get_sim_matrix_all(rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half)
-    del rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half
+    # mouse = 'AL036'
+    # probe = '19011116882'
+    # location = '3'
+    # dates = ['2020-02-24', '2020-02-25']
+    # exps = ['_2020-02-24_ephys_stripe240_PyKS_output', 
+    #         '_2020-02-25_ephys__2020-02-25_stripe240_NatIm_g0__2020-02-25_stripe240_NatIm_g0_imec0_PyKS_output']
+    # session_pair = '1'
+    # print('mouse',mouse,'session_pair',session_pair)
 
-    # original plot
-    # visualize_sim_matrix_all(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22, mouse, probe, location, dates, exps, model_name)
-    
-    # rearranged plot by position
-    day1_MaxSitepos, day2_MaxSitepos = get_day_MaxSitepos(good_units_files_1,good_units_files_2)
-    day1_sorted_indices = sort_neurons_by_position(day1_MaxSitepos)
-    day2_sorted_indices = sort_neurons_by_position(day2_MaxSitepos)
+    pairs = pd.read_csv(r"C:\Users\suyas\Save_UnitMatch\pairs.csv")
+    for idx, row in pairs.iterrows():
+        mouse = row["mouse"]
+        probe = row["probe"]
+        location = row["loc"]
+        exps = [row["r1"], row["r2"]]
+        session_pair = row["sessionpair"]
+        good_units_files_1,good_units_indices_1,good_units_files_2,good_units_indices_2 = load_mouse_data(mouse,probe,location,exps,mode)
+        rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half = get_representation_dnn(model,good_units_files_1,good_units_files_2)
+        sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22 = get_sim_matrix_all(rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half)
+        del rep_day1_first_half,rep_day1_second_half,rep_day2_first_half,rep_day2_second_half
 
-    resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22 = rearrange_four_matrix(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22, day1_sorted_indices, day2_sorted_indices)
-    visualize_sim_matrix_all(resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22, mouse, model_name,session_pair)
-    del resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22
+        # original plot
+        # visualize_sim_matrix_all(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22, mouse, probe, location, dates, exps, model_name)
+        
+        # rearranged plot by position
+        day1_MaxSitepos, day2_MaxSitepos = get_day_MaxSitepos(good_units_files_1,good_units_files_2)
+        day1_sorted_indices = sort_neurons_by_position(day1_MaxSitepos)
+        day2_sorted_indices = sort_neurons_by_position(day2_MaxSitepos)
 
-    # Within-day similarity distribution
-    # get neighboring neurons within day 1 and day 2
-    neighboring_neurons_within_day1 = get_neighboring_neurons(good_units_files_1,good_units_files_1,day1_MaxSitepos,day1_MaxSitepos)
-    neighboring_neurons_within_day2 = get_neighboring_neurons(good_units_files_2,good_units_files_2,day2_MaxSitepos,day2_MaxSitepos)
-    # get combined neurons
-    combined_neurons_within_day1 = get_combined_neurons(good_units_files_1,good_units_files_1,day1_MaxSitepos,day1_MaxSitepos)
-    combined_neurons_within_day2 = get_combined_neurons(good_units_files_2,good_units_files_2,day2_MaxSitepos,day2_MaxSitepos)
-    # plot within-day sim distribution respectively for day 1 and day 2
-    max_neuron_day = max(sim_matrix_11.shape[0], sim_matrix_22.shape[0])
-    nbins = max_neuron_day // 5
-    # get_sim_distribution_within_day_sp(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,dates,exps,model_name,nbins,days_index=0)  
-    # get_sim_distribution_within_day_sp(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,dates,exps,model_name,nbins,days_index=1)
-    boundary_similarity_value_day1 = get_sim_distribution_intersect(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)  
-    boundary_similarity_value_day2 = get_sim_distribution_intersect(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
-    # if max_neuron_day > 100:
-    #     within_day_sim_thr = max(boundary_similarity_value_day1, boundary_similarity_value_day2)
-    # else:
-    #     within_day_sim_thr =  (boundary_similarity_value_day1 + boundary_similarity_value_day2) / 2
-    # within_day_sim_thr = min(boundary_similarity_value_day1, boundary_similarity_value_day2)
-    within_day_sim_thr = max(boundary_similarity_value_day1, boundary_similarity_value_day2)
-    # within_day_sim_thr =  (boundary_similarity_value_day1 + boundary_similarity_value_day2) / 2
-    # print('within_day_sim_thr',within_day_sim_thr)
-    # plot within-day sim distribution for combined neurons
-    median_value_within_day1 = get_sim_distribution_within_day_tg(sim_matrix_11, combined_neurons_within_day1, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)
-    median_value_within_day2 = get_sim_distribution_within_day_tg(sim_matrix_22, combined_neurons_within_day2, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
-    # if max_neuron_day > 100:
-    #     median_value_within_day = min(median_value_within_day1, median_value_within_day2)
-    # else:
-    #     median_value_within_day = (median_value_within_day1 + median_value_within_day2) / 2
-    # median_value_within_day = max(median_value_within_day1, median_value_within_day2)
-    median_value_within_day = min(median_value_within_day1, median_value_within_day2)
-    # median_value_within_day = (median_value_within_day1 + median_value_within_day2) / 2
-    # print('median_value_within_day',median_value_within_day)
+        resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22 = rearrange_four_matrix(sim_matrix_11, sim_matrix_12, sim_matrix_21, sim_matrix_22, day1_sorted_indices, day2_sorted_indices)
+        visualize_sim_matrix_all(resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22, mouse, model_name,session_pair)
+        del resim_matrix_11, resim_matrix_12, resim_matrix_21, resim_matrix_22
 
-    # Across-day similarity distribution
-    # get combined neurons
-    combined_neurons_across_day = get_combined_neurons(good_units_files_1,good_units_files_2,day1_MaxSitepos,day2_MaxSitepos)
-    # plot across-day sim distribution
-    median_value_across_day_12,median_value_across_day_21 = get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons_across_day,mouse,probe,location,exps,model_name,session_pair,within_day_sim_thr,nbins)
-    median_value_across_day = max(median_value_across_day_12, median_value_across_day_21)
-    # print('median_value_across_day',median_value_across_day)
-    # get across-day sim threshold
-    across_day_sim_thr = within_day_sim_thr - (median_value_within_day - median_value_across_day)
-    # print('across_day_sim_thr',across_day_sim_thr)
+        # Within-day similarity distribution
+        # get neighboring neurons within day 1 and day 2
+        neighboring_neurons_within_day1 = get_neighboring_neurons(good_units_files_1,good_units_files_1,day1_MaxSitepos,day1_MaxSitepos)
+        neighboring_neurons_within_day2 = get_neighboring_neurons(good_units_files_2,good_units_files_2,day2_MaxSitepos,day2_MaxSitepos)
+        # get combined neurons
+        combined_neurons_within_day1 = get_combined_neurons(good_units_files_1,good_units_files_1,day1_MaxSitepos,day1_MaxSitepos)
+        combined_neurons_within_day2 = get_combined_neurons(good_units_files_2,good_units_files_2,day2_MaxSitepos,day2_MaxSitepos)
+        # plot within-day sim distribution respectively for day 1 and day 2
+        max_neuron_day = max(sim_matrix_11.shape[0], sim_matrix_22.shape[0])
+        nbins = max_neuron_day // 5
+        # get_sim_distribution_within_day_sp(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,dates,exps,model_name,nbins,days_index=0)  
+        # get_sim_distribution_within_day_sp(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,dates,exps,model_name,nbins,days_index=1)
+        boundary_similarity_value_day1 = get_sim_distribution_intersect(sim_matrix_11, neighboring_neurons_within_day1,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)  
+        boundary_similarity_value_day2 = get_sim_distribution_intersect(sim_matrix_22, neighboring_neurons_within_day2,mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
+        # if max_neuron_day > 100:
+        #     within_day_sim_thr = max(boundary_similarity_value_day1, boundary_similarity_value_day2)
+        # else:
+        #     within_day_sim_thr =  (boundary_similarity_value_day1 + boundary_similarity_value_day2) / 2
+        # within_day_sim_thr = min(boundary_similarity_value_day1, boundary_similarity_value_day2)
+        within_day_sim_thr = max(boundary_similarity_value_day1, boundary_similarity_value_day2)
+        # within_day_sim_thr =  (boundary_similarity_value_day1 + boundary_similarity_value_day2) / 2
+        # print('within_day_sim_thr',within_day_sim_thr)
+        # plot within-day sim distribution for combined neurons
+        median_value_within_day1 = get_sim_distribution_within_day_tg(sim_matrix_11, combined_neurons_within_day1, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=0)
+        median_value_within_day2 = get_sim_distribution_within_day_tg(sim_matrix_22, combined_neurons_within_day2, mouse,probe,location,exps,model_name,session_pair,nbins,days_index=1)
+        # if max_neuron_day > 100:
+        #     median_value_within_day = min(median_value_within_day1, median_value_within_day2)
+        # else:
+        #     median_value_within_day = (median_value_within_day1 + median_value_within_day2) / 2
+        # median_value_within_day = max(median_value_within_day1, median_value_within_day2)
+        median_value_within_day = min(median_value_within_day1, median_value_within_day2)
+        # median_value_within_day = (median_value_within_day1 + median_value_within_day2) / 2
+        # print('median_value_within_day',median_value_within_day)
 
-    # Hungarian tracking method
-    pred_pairs = tracking_method_for_inference(sim_matrix_12,sim_matrix_21,day1_MaxSitepos,day2_MaxSitepos,good_units_indices_1,good_units_indices_2,mouse,model_name,session_pair,NoMatchThr=across_day_sim_thr)
-    print('pred_pairs',pred_pairs)
-    print('len(pred_pairs)',len(pred_pairs))
+        # Across-day similarity distribution
+        # get combined neurons
+        combined_neurons_across_day = get_combined_neurons(good_units_files_1,good_units_files_2,day1_MaxSitepos,day2_MaxSitepos)
+        # plot across-day sim distribution
+        median_value_across_day_12,median_value_across_day_21 = get_sim_distribution_across_day_tg(sim_matrix_12,sim_matrix_21, combined_neurons_across_day,mouse,probe,location,exps,model_name,session_pair,within_day_sim_thr,nbins)
+        median_value_across_day = max(median_value_across_day_12, median_value_across_day_21)
+        # print('median_value_across_day',median_value_across_day)
+        # get across-day sim threshold
+        across_day_sim_thr = within_day_sim_thr - (median_value_within_day - median_value_across_day)
+        # print('across_day_sim_thr',across_day_sim_thr)
 
-    # Similarity threshold tracking method
-    # artifical_thr = 0.8
-    # match_pair = get_match_pair_above_SimThr(sim_matrix_12, sim_matrix_21, day1_MaxSitepos, day2_MaxSitepos, good_units_indices_1, good_units_indices_2,mouse,model_name,session_pair,thr=artifical_thr)
+        # Hungarian tracking method
+        pred_pairs = tracking_method_for_inference(sim_matrix_12,sim_matrix_21,day1_MaxSitepos,day2_MaxSitepos,good_units_indices_1,good_units_indices_2,mouse,model_name,session_pair,NoMatchThr=across_day_sim_thr)
+        print('pred_pairs',pred_pairs)
+        print('len(pred_pairs)',len(pred_pairs))
 
-    # sim_matrix_across_days = (sim_matrix_12 + sim_matrix_21) / 2
-    # pair_index_1 = find_index_np(132,good_units_indices_1)
-    # pair_index_2 = find_index_np(139,good_units_indices_2)
-    # median_value_within_day = np.round(median_value_within_day,4)
-    # within_day_sim_thr = np.round(within_day_sim_thr,4)
-    # median_value_across_day = np.round(median_value_across_day,4)
-    # across_day_sim_thr = np.round(across_day_sim_thr,4)
-    # sim_value = np.round(sim_matrix_across_days[pair_index_1,pair_index_2],4) + 0.9
-    # print('median_value_within_day',median_value_within_day)
-    # print('within_day_sim_thr',within_day_sim_thr)
-    # print('median_value_across_day',median_value_across_day)
-    # print('across_day_sim_thr',across_day_sim_thr)
-    # print('sim value of pair [132,139]',sim_value)
-    # print(pred_pairs)
-    # print(len(pred_pairs))
+        # Similarity threshold tracking method
+        # artifical_thr = 0.8
+        # match_pair = get_match_pair_above_SimThr(sim_matrix_12, sim_matrix_21, day1_MaxSitepos, day2_MaxSitepos, good_units_indices_1, good_units_indices_2,mouse,model_name,session_pair,thr=artifical_thr)
+
+        # sim_matrix_across_days = (sim_matrix_12 + sim_matrix_21) / 2
+        # pair_index_1 = find_index_np(132,good_units_indices_1)
+        # pair_index_2 = find_index_np(139,good_units_indices_2)
+        # median_value_within_day = np.round(median_value_within_day,4)
+        # within_day_sim_thr = np.round(within_day_sim_thr,4)
+        # median_value_across_day = np.round(median_value_across_day,4)
+        # across_day_sim_thr = np.round(across_day_sim_thr,4)
+        # sim_value = np.round(sim_matrix_across_days[pair_index_1,pair_index_2],4) + 0.9
+        # print('median_value_within_day',median_value_within_day)
+        # print('within_day_sim_thr',within_day_sim_thr)
+        # print('median_value_across_day',median_value_across_day)
+        # print('across_day_sim_thr',across_day_sim_thr)
+        # print('sim value of pair [132,139]',sim_value)
+        # print(pred_pairs)
+        # print(len(pred_pairs))
