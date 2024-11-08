@@ -372,7 +372,7 @@ def remove_split_units(within:pd.DataFrame, matches:pd.DataFrame, threshold, met
     matches_within = within.loc[within[metric]>=threshold, ["ISICorr", "ID1", "ID2", "RecSes1", "RecSes2"]]
     matches_within = directional_filter(matches_within)
     off_diag = matches_within.loc[matches_within["ID1"]!=matches_within["ID2"]]
-    split_units = []
+    split_units, indices_to_drop = [], []
     for idx, row in off_diag.iterrows():
         i1 = row["ID1"]
         i2 = row["ID2"]
@@ -386,8 +386,8 @@ def remove_split_units(within:pd.DataFrame, matches:pd.DataFrame, threshold, met
         r1 = row["RecSes1"]
         r2 = row["RecSes2"]
         if (r1,i1) in split_units or (r2,i2) in split_units:
-            matches = matches.drop(idx)
-    return matches
+            indices_to_drop.append(idx)
+    return matches.drop(indices_to_drop)
 
 def remove_conflicts(matches:pd.DataFrame, metric:str):
     indices_to_drop = []
