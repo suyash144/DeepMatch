@@ -9,6 +9,7 @@ from testing.similarity_matrices import read_depths
 from matplotlib_venn import venn3
 from tqdm import tqdm
 from scipy.stats import sem
+import mat73
 
 
 def test_metric(mt:pd.DataFrame, metric, vis:bool=False, rank:bool=False):
@@ -104,21 +105,22 @@ def get_matches(mt:pd.DataFrame, dnn_metric:str="DNNSim", um_metric:str="MatchPr
 
     return dnn_matches.index.to_list(), um_matches.index.to_list(), thresh
 
-def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool):
+def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool, rec1=None, rec2=None):
 
     test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     mt_path = os.path.join(test_data_root, mouse, probe, loc, "wentao_model.csv")
     mt = pd.read_csv(mt_path)
     sessions = mt["RecSes1"].unique()
-    depths = read_depths("AL036", "19011116882", "3")
+    depths = read_depths(mouse, probe, loc)
     venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
     dnn_rec, um_rec, dnn_n, um_n, dnn_prec, um_prec = [], [], [], [], [], []
     for r1 in tqdm(sessions):
         for r2 in tqdm(sessions):
-            if r1!=4 or r2 !=6:            # to compare same sessions as Wentao
-                continue
-            # if r1 >= r2 or abs(r2-r1)>1:
-            #     continue
+            if rec1 and rec2:
+                if r1!=rec1 or r2 !=rec1:            # to compare specific sessions rec1 and rec2
+                    continue
+            elif r1 >= r2 or abs(r2-r1)>1:
+                    continue
             df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
             dnn, um, thresh = get_matches(df, mt_path=mt_path, dist_thresh=20)
             func = func_matches(df, "refPopCorr")
@@ -128,7 +130,7 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
                 venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
                 if save:
                     filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
-                    savepath = os.path.join(venn_dir, mouse+"unidirectional", filename)
+                    savepath = os.path.join(venn_dir, "wentao_pairs", filename)
                     plt.savefig(savepath, bbox_inches='tight')
                     plt.clf()
                 else:
@@ -169,16 +171,86 @@ def save_diagrams(mouse:str, probe:str, loc:str, venn:bool, bar:bool, save:bool)
         plt.ylabel("Precision (percentage of matches found that are functional)")
         plt.tight_layout()
         if save:
-            savepath_bar = os.path.join(venn_dir, mouse+"unidirectional", "barcharts.png")
+            savepath_bar = os.path.join(venn_dir, "wentao_pairs", "barcharts.png")
             plt.savefig(savepath_bar, bbox_inches='tight')
             plt.clf()
         else:
             plt.show()
 
+def test_wentao_pairs():
+    pairs_path = r"C:\Users\suyas\Save_UnitMatch\pairs.csv"
+    pairs = pd.read_csv(pairs_path)
+    server_root = r"\\znas\Lab\Share\UNITMATCHTABLES_ENNY_CELIAN_JULIE\FullAnimal_KSChanMap"
+    venn_dir = r"C:\Users\suyas\results_figs\venn_diagrams"
+    test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
+
+    for idx, row in tqdm(pairs.iterrows(), total=len(pairs)):
+        if idx < 6:
+            continue
+        mouse, probe, loc = row["mouse"], row["probe"], row["loc"]
+        um_path = os.path.join(server_root, mouse, probe, loc, "UnitMatch", "UnitMatch.mat")
+        um = mat73.loadmat(um_path, verbose=False)
+        path_list, path_dict = um["UMparam"]["KSDir"], {}
+        for i, path in enumerate(path_list):
+            p = get_exp_id(path, mouse)
+            path_dict[p] = int(i+1)
+        r1 = path_dict[row["r1"]]
+        r2 = path_dict[row["r2"]]
+        mt_path = os.path.join(test_data_root, mouse, probe, loc, "new_matchtable.csv")
+        mt = pd.read_csv(mt_path)
+        depths = read_depths(mouse, probe, loc)
+        dnn_rec, um_rec, dnn_n, um_n, dnn_prec, um_prec = [], [], [], [], [], []
+        df = mt.loc[(mt["RecSes1"].isin([r1,r2])) & (mt["RecSes2"].isin([r1,r2])),:]
+        dnn, um, thresh = get_matches(df, mt_path=mt_path, dist_thresh=20)
+        func = func_matches(df, "refPopCorr")
+        hung = hungarian_matches(df, r1, r2, depths, mt_path, thresh)
+        func, dnn, um = set(func), set(hung), set(um)
+        venn3([func, dnn, um], ('Functional', 'DNN', 'UnitMatch'))
+        filename = "_".join((mouse, loc, str(r1), str(r2))) + '.png'
+        savepath = os.path.join(venn_dir, "wentao_pairs", filename)
+        plt.savefig(savepath, bbox_inches='tight')
+        plt.clf()
+        if len(func)==0:
+            continue
+        fd = len(dnn.intersection(func))
+        fu = len(um.intersection(func))
+        dnn_rec.append(fd / len(func))
+        um_rec.append(fu / len(func))
+        dnn_n.append(len(dnn))
+        um_n.append(len(um))
+        dnn_prec.append(fd / len(dnn))
+        um_prec.append(fu / len(um))
+    labels = ["DNN", "UnitMatch"]
+    recs = [np.mean(dnn_rec), np.mean(um_rec), sem(dnn_rec), sem(um_rec)]
+    numbers = [np.mean(dnn_n), np.mean(um_n), sem(dnn_n), sem(um_n)]
+    precs = [np.mean(dnn_prec), np.mean(um_prec), sem(dnn_prec), sem(um_prec)]
+    plt.subplot(1, 3, 1)
+    plt.bar(labels, recs[:2], yerr=recs[2:], capsize=10)
+    for i in range(len(dnn_rec)):
+        plt.scatter([0, 1], [dnn_rec[i], um_rec[i]], alpha=0.7, c="r")
+        plt.plot([0, 1], [dnn_rec[i], um_rec[i]], "r", alpha=0.7)
+    plt.ylabel("Recall (percentage of functional matches found)")
+    plt.subplot(1, 3, 2)
+    plt.bar(labels, numbers[:2], yerr=numbers[2:], capsize=10)
+    for i in range(len(dnn_n)):
+        plt.scatter([0, 1], [dnn_n[i], um_n[i]], alpha=0.7, c="r")
+        plt.plot([0, 1], [dnn_n[i], um_n[i]], "r", alpha=0.7)
+    plt.ylabel("Number of matches found")
+    plt.subplot(1, 3, 3)
+    plt.bar(labels, precs[:2], yerr=precs[2:], capsize=10)
+    for i in range(len(dnn_prec)):
+        plt.scatter([0, 1], [dnn_prec[i], um_prec[i]], alpha=0.7, c="r")
+        plt.plot([0, 1], [dnn_prec[i], um_prec[i]], "r", alpha=0.7)
+    plt.ylabel("Precision (percentage of matches found that are functional)")
+    plt.tight_layout()
+    savepath_bar = os.path.join(venn_dir, "wentao_pairs", "barcharts.png")
+    plt.savefig(savepath_bar, bbox_inches='tight')
+    plt.clf()
 
 if __name__=="__main__":
-    save_diagrams("AL036", "19011116882", "3", venn=True, bar=False, save=True)
+    # save_diagrams("AL036", "19011116882", "3", venn=True, bar=False, save=True)
     # test_data_root = os.path.join(os.path.dirname(os.getcwd()), "ALL_DATA")
     # mt_path = os.path.join(test_data_root, "AL036", "19011116882", "3", "new_matchtable.csv")
     # mt = pd.read_csv(mt_path)
     # print(test_metric(mt, "DNNSim", rank=True))
+    test_wentao_pairs()
